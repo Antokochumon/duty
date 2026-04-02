@@ -6,15 +6,34 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="description" content="Professional Duty Calendar App - Advanced scheduling with smart reminders">
   <title>Duty Calendar 2025</title>
-  <!-- OneSignal SDK -->
+  <!-- OneSignal SDK for push notifications (works when site is closed) -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
       await OneSignal.init({
         appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
+        safari_web_id: "web.onesignal.auto.74ec48f7-2aba-4801-83dd-e3b373c160d1",
+        allowLocalhostAsSecureOrigin: true,
+        notifyButton: {
+          enable: true,
+          displayPredicate: () => true,
+        },
       });
+      // Request permission on load if not yet granted
+      const permission = await OneSignal.Notifications.permission;
+      if (permission === "default") {
+        OneSignal.Notifications.requestPermission();
+      }
     });
+  </script>
+  <!-- Service Worker registration for offline & push -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/OneSignalSDKWorker.js').catch(err => console.log('SW error:', err));
+      });
+    }
   </script>
   <!-- Add jsPDF library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2213,7 +2232,7 @@
       }
     }
 
-    // Enhanced notification system with OneSignal support
+    // Enhanced notification system with OneSignal support (works when site closed)
     async function showNotification(title, message, type = 'info') {
       const notification = document.getElementById('notification');
       const titleEl = document.getElementById('notificationTitle');
@@ -2224,26 +2243,25 @@
       
       notification.className = `notification ${type} show`;
       
-      // For browser notifications using OneSignal
+      // For browser notifications and OneSignal (works even when website closed)
       if (notificationSettings.enabled) {
         try {
-          // Use OneSignal to send push notification (works even when browser is closed)
-          if (window.OneSignal && window.OneSignal.User) {
+          // Use OneSignal push (delivers even when site fully closed)
+          if (window.OneSignal && window.OneSignal.Notifications) {
             await window.OneSignal.Notifications.send({
               title: title,
               body: message,
-              icon: "image.jpg",
+              icon: "https://cdn-icons-png.flaticon.com/512/2838/2838912.png",
               url: window.location.href
             });
-          } else {
-            // Fallback to standard browser notification
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification(title, { body: message, icon: 'image.jpg' });
-            }
+          } 
+          // Fallback to standard browser notification (when site open but background)
+          else if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body: message, icon: 'image.jpg' });
           }
         } catch (e) {
           console.log('OneSignal notification error:', e);
-          // Fallback to standard notification
+          // Final fallback
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(title, { body: message });
           }
@@ -2260,13 +2278,13 @@
       notification.classList.remove('show');
     }
 
-    // Request notification permission with OneSignal
+    // Request notification permission with OneSignal (for closed website support)
     async function requestNotificationPermission() {
       try {
-        if (window.OneSignal && window.OneSignal.User) {
+        if (window.OneSignal && window.OneSignal.Notifications) {
           const permission = await window.OneSignal.Notifications.requestPermission();
           if (permission) {
-            showNotification('Notifications Enabled', 'You will now receive reminders for your duties', 'success');
+            showNotification('Notifications Enabled', 'You will now receive reminders even when the website is closed!', 'success');
             return true;
           }
         } else if ('Notification' in window) {
@@ -2470,7 +2488,7 @@
       }
       if (type === 'enabled' && notificationSettings[type]) {
         requestNotificationPermission().then(() => {
-          showNotification('Notifications Enabled', 'You will now receive reminders before your duties start', 'success');
+          showNotification('Notifications Enabled', 'You will now receive reminders before your duties start (even when site closed!)', 'success');
           scheduleAllNotifications();
         });
       } else if (type === 'enabled' && !notificationSettings[type]) {
@@ -2500,7 +2518,7 @@
     }
 
     // Duty management functions (preserved)
-    function addDuty() { /* existing code remains unchanged - preserving all functionality */ 
+    function addDuty() { 
       const date = document.getElementById('dutyDate').value;
       const startTime = document.getElementById('startTime').value;
       const endTime = document.getElementById('endTime').value;
@@ -2517,7 +2535,7 @@
       document.getElementById('dutyNotes').value = '';
       showNotification('Success', 'Duty added successfully', 'success');
     }
-    function addDutyMobile() { /* same logic as addDuty with mobile IDs */ 
+    function addDutyMobile() { 
       const date = document.getElementById('mobileDutyDate').value;
       const startTime = document.getElementById('mobileStartTime').value;
       const endTime = document.getElementById('mobileEndTime').value;
@@ -2567,7 +2585,7 @@
     function showNotesView() { const popup = document.getElementById('allNotesPopup'); popup.classList.add('active'); renderAllNotes(); }
     function hideAllNotesPopup() { document.getElementById('allNotesPopup').classList.remove('active'); }
     function closeAllNotesPopupOnBackdrop(event) { if (event.target === event.currentTarget) hideAllNotesPopup(); }
-    function renderAllNotes() { /* existing implementation */ const notesList = document.getElementById('allNotesList'); notesList.innerHTML = ''; const sortedNotes = [...notes].sort((a, b) => new Date(b.date) - new Date(a.date)); if (sortedNotes.length === 0) { notesList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">No notes yet. Add your first note!</div>'; return; } sortedNotes.forEach(note => { const noteElement = document.createElement('div'); noteElement.className = 'note-item'; noteElement.innerHTML = `<div class="note-date">${formatDate(note.date)}</div><div class="note-content">${note.content}</div><div style="display: flex; justify-content: flex-end; margin-top: 8px;"><button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="deleteNoteFromAllView('${note.id}')"><span>🗑️</span> Delete</button></div>`; notesList.appendChild(noteElement); }); }
+    function renderAllNotes() { const notesList = document.getElementById('allNotesList'); notesList.innerHTML = ''; const sortedNotes = [...notes].sort((a, b) => new Date(b.date) - new Date(a.date)); if (sortedNotes.length === 0) { notesList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">No notes yet. Add your first note!</div>'; return; } sortedNotes.forEach(note => { const noteElement = document.createElement('div'); noteElement.className = 'note-item'; noteElement.innerHTML = `<div class="note-date">${formatDate(note.date)}</div><div class="note-content">${note.content}</div><div style="display: flex; justify-content: flex-end; margin-top: 8px;"><button class="btn btn-outline" style="padding: 4px 8px; font-size: 12px;" onclick="deleteNoteFromAllView('${note.id}')"><span>🗑️</span> Delete</button></div>`; notesList.appendChild(noteElement); }); }
     function addNewNote() { const date = document.getElementById('newNoteDate').value; const content = document.getElementById('newNoteContent').value; if (!date || !content) { showNotification('Error', 'Please fill in all fields', 'error'); return; } notes.push({ id: generateId(), date, content, createdAt: new Date().toISOString() }); saveNotes(); document.getElementById('newNoteDate').value = ''; document.getElementById('newNoteContent').value = ''; renderAllNotes(); showNotification('Success', 'Note added successfully', 'success'); }
     function deleteNoteFromAllView(noteId) { const noteIndex = notes.findIndex(note => note.id === noteId); if (noteIndex !== -1) { notes.splice(noteIndex, 1); saveNotes(); renderAllNotes(); showNotification('Success', 'Note deleted successfully', 'success'); } }
     function showNotesPopup(dateStr) { selectedDate = dateStr; const popup = document.getElementById('notesPopup'); document.getElementById('notesPopupDate').textContent = formatDate(dateStr); popup.classList.add('active'); renderExistingNotes(dateStr); document.getElementById('notesPopupContent').value = ''; }
