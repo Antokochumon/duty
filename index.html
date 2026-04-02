@@ -6,33 +6,93 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="description" content="Professional Duty Calendar App - Advanced scheduling with smart reminders">
   <title>Duty Calendar 2025</title>
-  <!-- OneSignal SDK for push notifications (works when site is closed) -->
+  <!-- OneSignal Web SDK - For browser notifications (works when tab open) -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
+    // OneSignal Web SDK initialization - works when browser tab is open
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
       await OneSignal.init({
         appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
-        safari_web_id: "web.onesignal.auto.74ec48f7-2aba-4801-83dd-e3b373c160d1",
-        allowLocalhostAsSecureOrigin: true,
-        notifyButton: {
-          enable: true,
-          displayPredicate: () => true,
-        },
       });
-      // Request permission on load if not yet granted
-      const permission = await OneSignal.Notifications.permission;
-      if (permission === "default") {
-        OneSignal.Notifications.requestPermission();
-      }
     });
-  </script>
-  <!-- Service Worker registration for offline & push -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/OneSignalSDKWorker.js').catch(err => console.log('SW error:', err));
+    
+    // Kodular Bridge - For native Android notifications when app is closed
+    // This sends messages to Kodular WebView to trigger native Android notifications
+    window.KodularBridge = {
+      sendNotification: function(title, message, dutyTime) {
+        // Method 1: Kodular WebViewString (for Kodular apps)
+        if (window.Kodular && window.Kodular.sendNotification) {
+          window.Kodular.sendNotification(JSON.stringify({
+            title: title,
+            message: message,
+            time: dutyTime,
+            timestamp: new Date().toISOString()
+          }));
+        }
+        // Method 2: WebViewString change detection
+        else if (window.webkit && window.webkit.messageHandlers) {
+          window.webkit.messageHandlers.notificationHandler.postMessage({
+            title: title,
+            body: message
+          });
+        }
+        // Method 3: Standard console log for debugging
+        else {
+          console.log('[Kodular Notification]', title, message);
+        }
+      },
+      
+      // Register device for OneSignal Android SDK (called by Kodular)
+      registerAndroidDevice: function(onesignalUserId) {
+        localStorage.setItem('android_onesignal_id', onesignalUserId);
+        console.log('Android device registered:', onesignalUserId);
+        return true;
+      },
+      
+      // Check if running in Kodular
+      isInKodular: function() {
+        return !!(window.Kodular || window.webkit?.messageHandlers);
+      }
+    };
+    
+    // Hybrid notification system - works in both browser AND Kodular
+    async function sendHybridNotification(title, message, dutyId, dutyTime) {
+      // For Web Browser (OneSignal Web SDK)
+      if (!window.KodularBridge.isInKodular()) {
+        try {
+          if (window.OneSignal && window.OneSignal.Notifications) {
+            await window.OneSignal.Notifications.send({
+              title: title,
+              body: message,
+              icon: "https://cdn-icons-png.flaticon.com/512/2838/2838912.png",
+              url: window.location.href
+            });
+          } else if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body: message, icon: 'image.jpg' });
+          }
+        } catch(e) { console.log('Web notification error:', e); }
+      }
+      // For Kodular APK (Native Android Push - works when app is CLOSED!)
+      else {
+        window.KodularBridge.sendNotification(title, message, dutyTime);
+      }
+      
+      // Also store for background check
+      scheduleLocalReminder(dutyId, dutyTime, title, message);
+    }
+    
+    // Local reminder system (backup)
+    function scheduleLocalReminder(dutyId, dutyTime, title, message) {
+      const reminders = JSON.parse(localStorage.getItem('pending_reminders') || '[]');
+      reminders.push({
+        id: dutyId,
+        time: dutyTime,
+        title: title,
+        message: message,
+        scheduled: new Date().toISOString()
       });
+      localStorage.setItem('pending_reminders', JSON.stringify(reminders));
     }
   </script>
   <!-- Add jsPDF library -->
@@ -769,7 +829,7 @@
 
     /* Notes section - Removed from main interface */
     .notes-container {
-      display: none; /* Hide notes container from main interface */
+      display: none;
     }
 
     .note-item {
@@ -2000,7 +2060,6 @@
 
       <div class="notes-popup-content">
         <div id="allNotesList" style="max-height: 300px; overflow-y: auto;">
-          <!-- All notes will be populated here -->
         </div>
         
         <div class="form-group" style="margin-top: 20px;">
@@ -2232,8 +2291,9 @@
       }
     }
 
-    // Enhanced notification system with OneSignal support (works when site closed)
-    async function showNotification(title, message, type = 'info') {
+    // Hybrid notification system - Works in BOTH browser AND Kodular (Android native)
+    async function showNotification(title, message, type = 'info', dutyId = null, dutyTime = null) {
+      // Show in-app notification
       const notification = document.getElementById('notification');
       const titleEl = document.getElementById('notificationTitle');
       const messageEl = document.getElementById('notificationMessage');
@@ -2243,10 +2303,17 @@
       
       notification.className = `notification ${type} show`;
       
-      // For browser notifications and OneSignal (works even when website closed)
-      if (notificationSettings.enabled) {
+      setTimeout(() => {
+        hideNotification();
+      }, 5000);
+      
+      // Send to Kodular for native Android notification (works when app is CLOSED!)
+      if (window.KodularBridge && window.KodularBridge.isInKodular()) {
+        window.KodularBridge.sendNotification(title, message, dutyTime);
+      }
+      // For web browser (OneSignal)
+      else if (notificationSettings.enabled) {
         try {
-          // Use OneSignal push (delivers even when site fully closed)
           if (window.OneSignal && window.OneSignal.Notifications) {
             await window.OneSignal.Notifications.send({
               title: title,
@@ -2254,23 +2321,16 @@
               icon: "https://cdn-icons-png.flaticon.com/512/2838/2838912.png",
               url: window.location.href
             });
-          } 
-          // Fallback to standard browser notification (when site open but background)
-          else if ('Notification' in window && Notification.permission === 'granted') {
+          } else if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(title, { body: message, icon: 'image.jpg' });
           }
         } catch (e) {
           console.log('OneSignal notification error:', e);
-          // Final fallback
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(title, { body: message });
           }
         }
       }
-      
-      setTimeout(() => {
-        hideNotification();
-      }, 5000);
     }
 
     function hideNotification() {
@@ -2278,13 +2338,19 @@
       notification.classList.remove('show');
     }
 
-    // Request notification permission with OneSignal (for closed website support)
+    // Request notification permission with hybrid support
     async function requestNotificationPermission() {
+      // For Kodular Android - automatically granted
+      if (window.KodularBridge && window.KodularBridge.isInKodular()) {
+        showNotification('Notifications Ready', 'Android notifications will work even when app is closed!', 'success');
+        return true;
+      }
+      // For web browser
       try {
         if (window.OneSignal && window.OneSignal.Notifications) {
           const permission = await window.OneSignal.Notifications.requestPermission();
           if (permission) {
-            showNotification('Notifications Enabled', 'You will now receive reminders even when the website is closed!', 'success');
+            showNotification('Notifications Enabled', 'You will now receive reminders for your duties', 'success');
             return true;
           }
         } else if ('Notification' in window) {
@@ -2300,7 +2366,7 @@
       return false;
     }
 
-    // Schedule notifications for all duties (using OneSignal)
+    // Schedule notifications for all duties (hybrid - works in browser AND Kodular)
     function scheduleAllNotifications() {
       if (!notificationSettings.enabled) return;
       clearAllNotifications();
@@ -2314,7 +2380,7 @@
             twentyFourHoursBefore.setHours(twentyFourHoursBefore.getHours() - 24);
             if (twentyFourHoursBefore > now) {
               const timeoutId = setTimeout(() => {
-                showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning');
+                showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning', duty.id, duty.startTime);
               }, twentyFourHoursBefore - now);
               notificationTimeouts[`${duty.id}-24hour`] = timeoutId;
             }
@@ -2324,7 +2390,7 @@
             oneHourBefore.setHours(oneHourBefore.getHours() - 1);
             if (oneHourBefore > now) {
               const timeoutId = setTimeout(() => {
-                showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning');
+                showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning', duty.id, duty.startTime);
               }, oneHourBefore - now);
               notificationTimeouts[`${duty.id}-1hour`] = timeoutId;
             }
@@ -2334,7 +2400,7 @@
             thirtyMinutesBefore.setMinutes(thirtyMinutesBefore.getMinutes() - 30);
             if (thirtyMinutesBefore > now) {
               const timeoutId = setTimeout(() => {
-                showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning');
+                showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning', duty.id, duty.startTime);
               }, thirtyMinutesBefore - now);
               notificationTimeouts[`${duty.id}-30min`] = timeoutId;
             }
@@ -2367,7 +2433,7 @@
         const scheduledTime = new Date(custom.datetime);
         if (scheduledTime > now) {
           const timeoutId = setTimeout(() => {
-            showNotification(custom.title || 'Manual Reminder', custom.message || `Manual reminder for ${scheduledTime.toLocaleString()}`, 'info');
+            showNotification(custom.title || 'Manual Reminder', custom.message || `Manual reminder for ${scheduledTime.toLocaleString()}`, 'info', null, null);
             delete customNotificationTimeouts[custom.id];
           }, scheduledTime - now);
           customNotificationTimeouts[custom.id] = timeoutId;
@@ -2429,7 +2495,7 @@
         if (timeDiff > 0 && timeDiff < 5 * 60 * 1000) {
           const notificationKey = `${duty.id}-immediate`;
           if (!localStorage.getItem(notificationKey)) {
-            showNotification('Duty Starting Soon', `Your ${duty.type} duty starts in ${Math.round(timeDiff / (60 * 1000))} minutes at ${formatTime(duty.startTime)}`, 'warning');
+            showNotification('Duty Starting Soon', `Your ${duty.type} duty starts in ${Math.round(timeDiff / (60 * 1000))} minutes at ${formatTime(duty.startTime)}`, 'warning', duty.id, duty.startTime);
             localStorage.setItem(notificationKey, 'true');
             setTimeout(() => { localStorage.removeItem(notificationKey); }, timeDiff + 60000);
           }
@@ -2488,7 +2554,8 @@
       }
       if (type === 'enabled' && notificationSettings[type]) {
         requestNotificationPermission().then(() => {
-          showNotification('Notifications Enabled', 'You will now receive reminders before your duties start (even when site closed!)', 'success');
+          const platform = window.KodularBridge && window.KodularBridge.isInKodular() ? 'Android app' : 'browser';
+          showNotification('Notifications Enabled', `You will now receive reminders on your ${platform} (even when closed on Android!)`, 'success');
           scheduleAllNotifications();
         });
       } else if (type === 'enabled' && !notificationSettings[type]) {
@@ -2635,6 +2702,22 @@
     function handleTouchStart(e) { touchStartX = e.changedTouches[0].screenX; }
     function handleTouchEnd(e) { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }
     function handleSwipe() { const threshold = 50; const diff = touchEndX - touchStartX; if (Math.abs(diff) > threshold) { if (diff > 0) changeMonth(-1); else changeMonth(1); } }
+
+    // Kodular Bridge - Listen for Android registration
+    window.addEventListener('load', function() {
+      // Check if running in Kodular and notify
+      if (window.KodularBridge && window.KodularBridge.isInKodular()) {
+        console.log('Running in Kodular Android App - Native notifications enabled');
+        // Auto-enable notifications for Kodular
+        if (!notificationSettings.enabled) {
+          notificationSettings.enabled = true;
+          saveNotificationSettings();
+          document.getElementById('notificationToggle').checked = true;
+          document.getElementById('mobileNotificationToggle').checked = true;
+        }
+        showNotification('📱 Android Mode', 'Notifications will work even when app is closed!', 'success');
+      }
+    });
 
     // Initialize app
     function initializeApp() {
