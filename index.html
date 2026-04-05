@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="description" content="Professional Duty Calendar App - Advanced scheduling with smart reminders">
   <title>Duty Calendar 2025</title>
-  <!-- OneSignal SDK for push notifications (works when site is closed) - FIXED VERSION -->
+  <!-- OneSignal SDK for push notifications (works when site is closed) -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     // Fixed OneSignal initialization - Let OneSignal handle service workers automatically
@@ -46,10 +46,54 @@
         const userId = await window.OneSignal.User.getOnesignalId();
         console.log("OneSignal Status:", { isSupported, permission, userId });
         if (userId) {
-          showNotification("✅ Notifications Ready", "Push notifications are properly configured!", "success");
+          showNotification("✅ Notifications Ready", "Push notifications are properly configured! Even when browser closed.", "success");
+          // Also register this user with Google Apps Script backend
+          await registerUserWithBackend(userId);
         }
       }
     };
+    
+    // Register user with Google Apps Script backend
+    async function registerUserWithBackend(onesignalId) {
+      try {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbxTnGEQ0BrcXK9xQxqX9xX9xX9xX9xX9xX9xX9x/exec', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `action=register&onesignal_id=${onesignalId}`
+        });
+        console.log("User registered with backend");
+      } catch(e) { console.log("Backend registration error:", e); }
+    }
+    
+    // Send duty notification via Google Apps Script (works when site closed)
+    async function sendBackendNotification(title, message, dutyDate, startTime, dutyType) {
+      try {
+        // Get OneSignal User ID
+        let onesignalId = null;
+        if (window.OneSignal) {
+          onesignalId = await window.OneSignal.User.getOnesignalId();
+        }
+        
+        const payload = new URLSearchParams({
+          action: 'send_notification',
+          title: title,
+          message: message,
+          duty_date: dutyDate,
+          duty_time: startTime,
+          duty_type: dutyType,
+          onesignal_id: onesignalId || ''
+        });
+        
+        await fetch('https://script.google.com/macros/s/AKfycbxTnGEQ0BrcXK9xQxqX9xX9xX9xX9xX9xX9xX9x/exec', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: payload
+        });
+        console.log("Backend notification triggered");
+      } catch(e) { console.log("Backend notification error:", e); }
+    }
   </script>
   <!-- Add jsPDF library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -2335,6 +2379,7 @@
             if (twentyFourHoursBefore > now) {
               const timeoutId = setTimeout(() => {
                 showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning');
+                sendBackendNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, duty.date, duty.startTime, duty.type);
               }, twentyFourHoursBefore - now);
               notificationTimeouts[`${duty.id}-24hour`] = timeoutId;
             }
@@ -2345,6 +2390,7 @@
             if (oneHourBefore > now) {
               const timeoutId = setTimeout(() => {
                 showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning');
+                sendBackendNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, duty.date, duty.startTime, duty.type);
               }, oneHourBefore - now);
               notificationTimeouts[`${duty.id}-1hour`] = timeoutId;
             }
@@ -2355,6 +2401,7 @@
             if (thirtyMinutesBefore > now) {
               const timeoutId = setTimeout(() => {
                 showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning');
+                sendBackendNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, duty.date, duty.startTime, duty.type);
               }, thirtyMinutesBefore - now);
               notificationTimeouts[`${duty.id}-30min`] = timeoutId;
             }
@@ -2388,6 +2435,7 @@
         if (scheduledTime > now) {
           const timeoutId = setTimeout(() => {
             showNotification(custom.title || 'Manual Reminder', custom.message || `Manual reminder for ${scheduledTime.toLocaleString()}`, 'info');
+            sendBackendNotification(custom.title || 'Manual Reminder', custom.message || `Manual reminder for ${scheduledTime.toLocaleString()}`, '', '', 'manual');
             delete customNotificationTimeouts[custom.id];
           }, scheduledTime - now);
           customNotificationTimeouts[custom.id] = timeoutId;
@@ -2450,6 +2498,7 @@
           const notificationKey = `${duty.id}-immediate`;
           if (!localStorage.getItem(notificationKey)) {
             showNotification('Duty Starting Soon', `Your ${duty.type} duty starts in ${Math.round(timeDiff / (60 * 1000))} minutes at ${formatTime(duty.startTime)}`, 'warning');
+            sendBackendNotification('Duty Starting Soon', `Your ${duty.type} duty starts in ${Math.round(timeDiff / (60 * 1000))} minutes at ${formatTime(duty.startTime)}`, duty.date, duty.startTime, duty.type);
             localStorage.setItem(notificationKey, 'true');
             setTimeout(() => { localStorage.removeItem(notificationKey); }, timeDiff + 60000);
           }
@@ -2535,6 +2584,7 @@
         return;
       }
       showNotification('Test Notification', 'This is a test notification. You will receive similar alerts 24h, 1h, and 30min before your duties.', 'info');
+      sendBackendNotification('Test Notification', 'This is a test notification. Your push system works!', '', '', 'test');
     }
 
     // Duty management functions (preserved)
@@ -2554,6 +2604,7 @@
       document.getElementById('dutyType').value = 'regular';
       document.getElementById('dutyNotes').value = '';
       showNotification('Success', 'Duty added successfully', 'success');
+      sendBackendNotification('Duty Added', `New ${type} duty scheduled on ${date} from ${startTime} to ${endTime}`, date, startTime, type);
     }
     function addDutyMobile() { 
       const date = document.getElementById('mobileDutyDate').value;
@@ -2572,6 +2623,7 @@
       document.getElementById('mobileDutyNotes').value = '';
       showNotification('Success', 'Duty added successfully', 'success');
       toggleMobileMenu();
+      sendBackendNotification('Duty Added', `New ${type} duty scheduled on ${date} from ${startTime} to ${endTime}`, date, startTime, type);
     }
     function removeDuty() {
       const date = document.getElementById('dutyDate').value;
@@ -2631,7 +2683,7 @@
     function hideDutyPopup() { document.getElementById('dutyPopup').classList.remove('active'); }
     function closeDutyPopupOnBackdrop(event) { if (event.target === event.currentTarget) hideDutyPopup(); }
     function renderExistingDuty(dateStr) { const dutyInfo = document.getElementById('existingDutyInfo'); const deleteBtn = document.getElementById('popupDeleteBtn'); const duty = duties.find(d => d.date === dateStr); if (duty) { dutyInfo.innerHTML = `<div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 12px;"><div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><strong>${duty.type.charAt(0).toUpperCase() + duty.type.slice(1)} Duty</strong><span>${duty.startTime} - ${duty.endTime}</span></div>${duty.notes ? `<div style="font-size: 14px;">${duty.notes}</div>` : ''}</div>`; deleteBtn.style.display = 'block'; document.getElementById('popupStartTime').value = duty.startTime; document.getElementById('popupEndTime').value = duty.endTime; const popupTypeSelect = document.getElementById('popupDutyType'); const popupTypeCustom = document.getElementById('popupDutyTypeCustom'); const hasOption = Array.from(popupTypeSelect.options).some(o => o.value === duty.type); if (hasOption) { popupTypeSelect.value = duty.type; if (popupTypeCustom) popupTypeCustom.value = ''; } else { popupTypeSelect.value = 'custom'; if (popupTypeCustom) popupTypeCustom.value = duty.type; } if (popupTypeSelect) togglePopupDutyTypeInput(); const notesEl = document.getElementById('popupDutyNotes'); if (notesEl) notesEl.value = duty.notes || ''; } else { dutyInfo.innerHTML = '<div style="text-align: center; padding: 10px; color: var(--text-secondary);">No duty scheduled for this date</div>'; deleteBtn.style.display = 'none'; document.getElementById('popupStartTime').value = '08:00'; document.getElementById('popupEndTime').value = '17:00'; document.getElementById('popupDutyType').value = 'regular'; const customReset = document.getElementById('popupDutyTypeCustom'); if (customReset) customReset.value = ''; if (document.getElementById('popupDutyType')) togglePopupDutyTypeInput(); const notesReset = document.getElementById('popupDutyNotes'); if (notesReset) notesReset.value = ''; } }
-    function saveDutyFromPopup() { const date = selectedDate; const startTime = document.getElementById('popupStartTime').value; const endTime = document.getElementById('popupEndTime').value; let type = document.getElementById('popupDutyType').value; const customInput = document.getElementById('popupDutyTypeCustom'); if (type === 'custom' && customInput && customInput.value.trim()) type = customInput.value.trim(); const notesVal = document.getElementById('popupDutyNotes') ? document.getElementById('popupDutyNotes').value : ''; if (!startTime || !endTime) { showNotification('Error', 'Please fill in all required fields', 'error'); return; } const existingIndex = duties.findIndex(duty => duty.date === date); if (existingIndex !== -1) { duties[existingIndex] = { ...duties[existingIndex], startTime, endTime, type, notes: notesVal }; } else { duties.push({ id: generateId(), date, startTime, endTime, type, notes: notesVal, createdAt: new Date().toISOString() }); } saveDuties(); renderCalendar(); hideDutyPopup(); showNotification('Success', 'Duty saved successfully', 'success'); }
+    function saveDutyFromPopup() { const date = selectedDate; const startTime = document.getElementById('popupStartTime').value; const endTime = document.getElementById('popupEndTime').value; let type = document.getElementById('popupDutyType').value; const customInput = document.getElementById('popupDutyTypeCustom'); if (type === 'custom' && customInput && customInput.value.trim()) type = customInput.value.trim(); const notesVal = document.getElementById('popupDutyNotes') ? document.getElementById('popupDutyNotes').value : ''; if (!startTime || !endTime) { showNotification('Error', 'Please fill in all required fields', 'error'); return; } const existingIndex = duties.findIndex(duty => duty.date === date); if (existingIndex !== -1) { duties[existingIndex] = { ...duties[existingIndex], startTime, endTime, type, notes: notesVal }; } else { duties.push({ id: generateId(), date, startTime, endTime, type, notes: notesVal, createdAt: new Date().toISOString() }); } saveDuties(); renderCalendar(); hideDutyPopup(); showNotification('Success', 'Duty saved successfully', 'success'); sendBackendNotification('Duty Updated', `Duty on ${date} updated: ${type} from ${startTime} to ${endTime}`, date, startTime, type); }
     function deleteDutyFromPopup() { const date = selectedDate; const dutyIndex = duties.findIndex(duty => duty.date === date); if (dutyIndex === -1) { showNotification('Error', 'No duty found for this date', 'error'); return; } clearDutyNotifications(duties[dutyIndex].id); duties.splice(dutyIndex, 1); saveDuties(); renderCalendar(); hideDutyPopup(); showNotification('Success', 'Duty deleted successfully', 'success'); }
 
     // Calendar functions
