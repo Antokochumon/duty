@@ -2384,6 +2384,31 @@
     }
     document.addEventListener('DOMContentLoaded', initializeApp);
     document.addEventListener('visibilitychange', function() { if (!document.hidden && notificationSettings.enabled) checkImmediateNotifications(); });
+
+// Add this function to your website
+async function registerUserWithBackend() {
+  try {
+    if (window.OneSignal) {
+      const userId = await window.OneSignal.User.getOnesignalId();
+      if (userId) {
+        const response = await fetch('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `action=register&onesignal_id=${userId}`
+        });
+        const result = await response.json();
+        console.log("Registration result:", result);
+      }
+    }
+  } catch(e) {
+    console.log("Registration error:", e);
+  }
+}
+
+// Call this when page loads and after OneSignal init
+setTimeout(registerUserWithBackend, 5000);
+
+    
   </script>
 </body>
 </html>
