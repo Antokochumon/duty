@@ -40,12 +40,10 @@
       if (window.OneSignal) {
         const isPushSupported = await window.OneSignal.Notifications.isPushSupported();
         const permission = await window.OneSignal.Notifications.permission;
-        // Get user ID - FIXED for v16
         const userId = await window.OneSignal.User.getOnesignalId();
         console.log("OneSignal Status:", { isPushSupported, permission, userId });
         if (userId) {
           showNotification("✅ Notifications Ready", "Push notifications are properly configured!", "success");
-          // Register user with backend
           await registerUserWithBackend(userId);
         }
       }
@@ -54,7 +52,6 @@
     // Register user with Google Apps Script backend
     async function registerUserWithBackend(onesignalId) {
       try {
-        // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT URL
         await fetch('https://script.google.com/macros/s/AKfycbw9BmWra-znTlNUgRrBW30piKPhdiEYyq8FV9gnUR5Ij4HfeAF7hwVCA56uYR-IXOFz/exec', {
           method: 'POST',
           mode: 'no-cors',
@@ -65,10 +62,9 @@
       } catch(e) { console.log("Backend registration error:", e); }
     }
     
-    // Send duty notification via Google Apps Script - FIXED to not use OneSignal directly
+    // Send duty notification via Google Apps Script (works when browser closed)
     async function sendBackendNotification(title, message, dutyDate, startTime, dutyType) {
       try {
-        // Get OneSignal User ID using correct v16 API
         let onesignalId = null;
         if (window.OneSignal) {
           onesignalId = await window.OneSignal.User.getOnesignalId();
@@ -84,15 +80,65 @@
           onesignal_id: onesignalId || ''
         });
         
-        // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT URL
         await fetch('https://script.google.com/macros/s/AKfycbw9BmWra-znTlNUgRrBW30piKPhdiEYyq8FV9gnUR5Ij4HfeAF7hwVCA56uYR-IXOFz/exec', {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: payload
         });
-        console.log("Backend notification triggered");
+        console.log("Backend notification triggered:", title);
       } catch(e) { console.log("Backend notification error:", e); }
+    }
+    
+    // Schedule duty reminders to be sent via backend at exact times
+    async function scheduleDutyReminders(duty) {
+      const dutyDateTime = new Date(`${duty.date}T${duty.startTime}`);
+      const now = new Date();
+      
+      // 24 hours before
+      const twentyFourHour = new Date(dutyDateTime);
+      twentyFourHour.setHours(twentyFourHour.getHours() - 24);
+      if (twentyFourHour > now && notificationSettings['24hour']) {
+        const delayMs = twentyFourHour - now;
+        setTimeout(async () => {
+          await sendBackendNotification(
+            '⏰ Upcoming Duty Tomorrow',
+            `You have a ${duty.type} duty scheduled for tomorrow at ${duty.startTime}`,
+            duty.date, duty.startTime, duty.type
+          );
+          showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning');
+        }, delayMs);
+      }
+      
+      // 1 hour before
+      const oneHour = new Date(dutyDateTime);
+      oneHour.setHours(oneHour.getHours() - 1);
+      if (oneHour > now && notificationSettings['1hour']) {
+        const delayMs = oneHour - now;
+        setTimeout(async () => {
+          await sendBackendNotification(
+            '⏰ Upcoming Duty in 1 Hour',
+            `Your ${duty.type} duty starts at ${duty.startTime}`,
+            duty.date, duty.startTime, duty.type
+          );
+          showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning');
+        }, delayMs);
+      }
+      
+      // 30 minutes before
+      const thirtyMin = new Date(dutyDateTime);
+      thirtyMin.setMinutes(thirtyMin.getMinutes() - 30);
+      if (thirtyMin > now && notificationSettings['30min']) {
+        const delayMs = thirtyMin - now;
+        setTimeout(async () => {
+          await sendBackendNotification(
+            '⏰ Upcoming Duty in 30 Minutes',
+            `Your ${duty.type} duty starts soon at ${duty.startTime}`,
+            duty.date, duty.startTime, duty.type
+          );
+          showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning');
+        }, delayMs);
+      }
     }
   </script>
   <!-- Add jsPDF library -->
@@ -829,7 +875,7 @@
 
     /* Notes section - Removed from main interface */
     .notes-container {
-      display: none; /* Hide notes container from main interface */
+      display: none;
     }
 
     .note-item {
@@ -848,10 +894,6 @@
 
     .note-content {
       font-size: 14px;
-    }
-
-    .add-note-form {
-      margin-top: 12px;
     }
 
     /* Notes Popup */
@@ -1140,7 +1182,6 @@
       box-shadow: var(--shadow-lg);
     }
 
-
     .duty-popup-actions .btn {
       flex: 1 1 auto;
       min-width: 110px;
@@ -1301,30 +1342,24 @@
         padding: 18px;
         max-height: 92vh;
       }
-
       .duty-popup-content {
         gap: 16px;
         padding: 14px;
       }
-
       .duty-popup-actions {
         justify-content: space-between;
       }
-
       .duty-popup-actions .btn {
         flex: 1 1 48%;
         min-width: 120px;
       }
-
       .duty-popup-actions .btn:nth-child(3) {
         flex: 1 1 100%;
       }
-
       .todo-input-group,
       .popup-note-input-group {
         flex-direction: column;
       }
-
       .todo-input-group button,
       .popup-note-input-group button {
         width: 100%;
@@ -1467,11 +1502,6 @@
     }
 
     /* Animations */
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
     @keyframes fadeInUp {
       from {
         opacity: 0;
@@ -1494,142 +1524,38 @@
 
     /* Responsive */
     @media (max-width: 480px) {
-      body {
-        padding: 6px;
-      }
-      
-      .form-row {
-        grid-template-columns: 1fr;
-      }
-      
-      .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 6px;
-      }
-      
-      .stat-card {
-        padding: 8px;
-      }
-      
-      .stat-number {
-        font-size: 14px;
-      }
-      
-      .stat-label {
-        font-size: 8px;
-      }
-      
-      .calendar-date {
-        min-height: 50px;
-        font-size: 13px;
-        margin: 1px;
-      }
-      
-      .calendar-grid {
-        gap: 4px;
-        padding: 16px;
-        min-height: 380px;
-      }
-      
-      .duty-time {
-        font-size: 8px;
-        padding: 1px 2px;
-      }
-
-      .card {
-        padding: 16px;
-        margin-bottom: 12px;
-      }
-
-      .logo-text h1 {
-        font-size: 18px;
-      }
-
-      .logo-text .subtitle {
-        font-size: 11px;
-      }
-
-      .date-number {
-        width: 26px;
-        height: 26px;
-      }
-
-      .calendar-date.today .date-number {
-        width: 26px;
-        height: 26px;
-      }
-
-      .modal {
-        width: 95%;
-        padding: 16px;
-      }
-
-      .notes-popup {
-        width: 95%;
-        padding: 16px;
-      }
-
-      .duty-popup {
-        width: 95%;
-        padding: 16px;
-      }
+      body { padding: 6px; }
+      .form-row { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr; gap: 6px; }
+      .stat-card { padding: 8px; }
+      .stat-number { font-size: 14px; }
+      .stat-label { font-size: 8px; }
+      .calendar-date { min-height: 50px; font-size: 13px; margin: 1px; }
+      .calendar-grid { gap: 4px; padding: 16px; min-height: 380px; }
+      .duty-time { font-size: 8px; padding: 1px 2px; }
+      .card { padding: 16px; margin-bottom: 12px; }
+      .logo-text h1 { font-size: 18px; }
+      .logo-text .subtitle { font-size: 11px; }
+      .date-number { width: 26px; height: 26px; }
+      .calendar-date.today .date-number { width: 26px; height: 26px; }
+      .modal { width: 95%; padding: 16px; }
+      .notes-popup { width: 95%; padding: 16px; }
+      .duty-popup { width: 95%; padding: 16px; }
     }
 
     @media (min-width: 769px) {
-      .container {
-        max-width: 900px;
-        padding: 0 20px;
-      }
-      
-      .desktop-only {
-        display: block;
-      }
-      
-      .mobile-actions {
-        display: none;
-      }
-      
-      .desktop-actions {
-        display: flex;
-      }
-      
-      .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .theme-toggle {
-        display: flex;
-      }
-
-      .calendar-grid {
-        gap: 8px;
-        padding: 24px;
-        min-height: 480px;
-      }
-
-      .calendar-date {
-        min-height: 65px;
-        font-size: 15px;
-        margin: 3px;
-      }
-
-      .date-number {
-        width: 34px;
-        height: 34px;
-      }
-
-      .calendar-date.today .date-number {
-        width: 34px;
-        height: 34px;
-      }
-
-      .stat-number {
-        font-size: 20px;
-      }
-
-      .stat-label {
-        font-size: 10px;
-      }
+      .container { max-width: 900px; padding: 0 20px; }
+      .desktop-only { display: block; }
+      .mobile-actions { display: none; }
+      .desktop-actions { display: flex; }
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+      .theme-toggle { display: flex; }
+      .calendar-grid { gap: 8px; padding: 24px; min-height: 480px; }
+      .calendar-date { min-height: 65px; font-size: 15px; margin: 3px; }
+      .date-number { width: 34px; height: 34px; }
+      .calendar-date.today .date-number { width: 34px; height: 34px; }
+      .stat-number { font-size: 20px; }
+      .stat-label { font-size: 10px; }
     }
   </style>
 </head>
@@ -1743,30 +1669,21 @@
 
           <div class="notification-options" id="mobileNotificationOptions">
             <div class="notification-option">
-              <label>
-                <span>⏰</span>
-                24 Hours Before
-              </label>
+              <label><span>⏰</span>24 Hours Before</label>
               <label class="switch">
                 <input type="checkbox" id="mobile24HourToggle" onchange="toggleNotificationOption('24hour')">
                 <span class="switch-slider"></span>
               </label>
             </div>
             <div class="notification-option">
-              <label>
-                <span>⏰</span>
-                1 Hour Before
-              </label>
+              <label><span>⏰</span>1 Hour Before</label>
               <label class="switch">
                 <input type="checkbox" id="mobile1HourToggle" onchange="toggleNotificationOption('1hour')">
                 <span class="switch-slider"></span>
               </label>
             </div>
             <div class="notification-option">
-              <label>
-                <span>⏰</span>
-                30 Minutes Before
-              </label>
+              <label><span>⏰</span>30 Minutes Before</label>
               <label class="switch">
                 <input type="checkbox" id="mobile30MinToggle" onchange="toggleNotificationOption('30min')">
                 <span class="switch-slider"></span>
@@ -1823,13 +1740,12 @@
           <button class="btn btn-outline" onclick="showNotesView(); toggleMobileMenu();">
             <span>📝</span> View All Notes
           </button>
-
         </div>
       </div>
     </div>
 
     <main>
-      <!-- Stats Grid - Smaller -->
+      <!-- Stats Grid -->
       <div class="stats-grid fade-in">
         <div class="stat-card">
           <div class="stat-number" id="totalDuties">0</div>
@@ -1849,7 +1765,7 @@
         </div>
       </div>
 
-      <!-- Desktop Duty Management (Hidden on Mobile) -->
+      <!-- Desktop Duty Management -->
       <div class="card fade-in desktop-only">
         <div class="card-header">
           <div class="card-icon">📋</div>
@@ -1905,7 +1821,7 @@
         </div>
       </div>
 
-      <!-- Desktop Smart Notifications (Hidden on Mobile) -->
+      <!-- Desktop Smart Notifications -->
       <div class="card fade-in desktop-only">
         <div class="card-header">
           <div class="card-icon">🔔</div>
@@ -1928,30 +1844,21 @@
 
         <div class="notification-options" id="desktopNotificationOptions">
           <div class="notification-option">
-            <label>
-              <span>⏰</span>
-              24 Hours Before
-            </label>
+            <label><span>⏰</span>24 Hours Before</label>
             <label class="switch">
               <input type="checkbox" id="24HourToggle" onchange="toggleNotificationOption('24hour')">
               <span class="switch-slider"></span>
             </label>
           </div>
           <div class="notification-option">
-            <label>
-              <span>⏰</span>
-              1 Hour Before
-            </label>
+            <label><span>⏰</span>1 Hour Before</label>
             <label class="switch">
               <input type="checkbox" id="1HourToggle" onchange="toggleNotificationOption('1hour')">
               <span class="switch-slider"></span>
             </label>
           </div>
           <div class="notification-option">
-            <label>
-              <span>⏰</span>
-              30 Minutes Before
-            </label>
+            <label><span>⏰</span>30 Minutes Before</label>
             <label class="switch">
               <input type="checkbox" id="30MinToggle" onchange="toggleNotificationOption('30min')">
               <span class="switch-slider"></span>
@@ -2003,7 +1910,7 @@
         </div>
       </div>
 
-      <!-- Calendar (Always Visible) - Increased height with better spacing -->
+      <!-- Calendar -->
       <div class="card fade-in">
         <div class="card-header">
           <div class="card-icon">📆</div>
@@ -2033,19 +1940,13 @@
         <div class="notes-popup-title" id="notesPopupTitle">Notes for <span id="notesPopupDate"></span></div>
         <button class="close-notes-popup" onclick="hideNotesPopup()" aria-label="Close notes popup">×</button>
       </div>
-
       <div class="notes-popup-content">
-        <div id="existingNotesContainer">
-          <h4 style="margin-bottom: 12px;">Existing Notes</div>
-          <div id="existingNotesList"></div>
-        </div>
-        
+        <div id="existingNotesContainer"><h4 style="margin-bottom: 12px;">Existing Notes</h4><div id="existingNotesList"></div></div>
         <div class="form-group" style="margin-top: 20px;">
           <label for="notesPopupContent">Add New Note</label>
           <textarea id="notesPopupContent" rows="4" placeholder="Write your note here..."></textarea>
         </div>
       </div>
-
       <div class="notes-popup-actions">
         <button class="btn btn-primary" onclick="saveNoteFromPopup()">Save Note</button>
         <button class="btn btn-outline" onclick="hideNotesPopup()">Close</button>
@@ -2060,12 +1961,8 @@
         <div class="notes-popup-title">All Notes</div>
         <button class="close-notes-popup" onclick="hideAllNotesPopup()" aria-label="Close all notes popup">×</button>
       </div>
-
       <div class="notes-popup-content">
-        <div id="allNotesList" style="max-height: 300px; overflow-y: auto;">
-          <!-- All notes will be populated here -->
-        </div>
-        
+        <div id="allNotesList" style="max-height: 300px; overflow-y: auto;"></div>
         <div class="form-group" style="margin-top: 20px;">
           <label for="newNoteDate">📅 Date</label>
           <input type="date" id="newNoteDate" required>
@@ -2075,7 +1972,6 @@
           <textarea id="newNoteContent" rows="4" placeholder="Write your note here..."></textarea>
         </div>
       </div>
-
       <div class="notes-popup-actions">
         <button class="btn btn-primary" onclick="addNewNote()">Add Note</button>
         <button class="btn btn-outline" onclick="hideAllNotesPopup()">Close</button>
@@ -2091,40 +1987,21 @@
         <button class="close-duty-popup" onclick="hideDutyPopup()" aria-label="Close duty popup">×</button>
       </div>
       <div class="duty-popup-content">
-        <div id="existingDutyContainer">
-          <h4 style="margin-bottom: 12px;">Existing Duty</div>
-          <div id="existingDutyInfo">
-        </div>
-        
-        
-        <div class="form-group" style="margin-top: 20px;">
-          <label for="popupStartTime">🕐 Start Time</label>
-          <input type="time" id="popupStartTime" value="08:00" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="popupEndTime">🕔 End Time</label>
-          <input type="time" id="popupEndTime" value="17:00" required>
-        </div>
-
+        <div id="existingDutyContainer"><h4 style="margin-bottom: 12px;">Existing Duty</h4><div id="existingDutyInfo"></div></div>
+        <div class="form-group"><label for="popupStartTime">🕐 Start Time</label><input type="time" id="popupStartTime" value="08:00" required></div>
+        <div class="form-group"><label for="popupEndTime">🕔 End Time</label><input type="time" id="popupEndTime" value="17:00" required></div>
         <div class="form-group">
           <label for="popupDutyType">🏷️ Duty Type</label>
           <div style="display:flex; gap:8px; align-items:center;">
             <select id="popupDutyType">
-              <option value="regular">Regular Duty</option>
-              <option value="overtime">Overtime</option>
-              <option value="holiday">Holiday</option>
-              <option value="training">Training</option>
-              <option value="meeting">Meeting</option>
-              <option value="emergency">Emergency</option>
+              <option value="regular">Regular Duty</option><option value="overtime">Overtime</option>
+              <option value="holiday">Holiday</option><option value="training">Training</option>
+              <option value="meeting">Meeting</option><option value="emergency">Emergency</option>
               <option value="custom">Custom...</option>
             </select>
             <input id="popupDutyTypeCustom" type="text" placeholder="Type custom duty" style="display:none; flex:1; min-width:140px;" />
           </div>
         </div>
-
-
-        
         <div class="form-group">
           <label for="popupNoteInput">📝 Notes for this date</label>
           <div class="popup-note-input-group">
@@ -2132,15 +2009,10 @@
             <button type="button" class="btn btn-primary" id="popupNoteAddBtn" onclick="addOrUpdatePopupNote()">Add</button>
           </div>
         </div>
-
         <div class="popup-notes-list" id="popupNotesList"></div>
-
         <div class="todo-section">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
-            <div>
-              <div style="font-size: 16px; font-weight: 600;">Date Tasks</div>
-              <div style="font-size: 13px; color: var(--text-secondary);">Create checklist items for this duty date</div>
-            </div>
+            <div><div style="font-size: 16px; font-weight: 600;">Date Tasks</div><div style="font-size: 13px; color: var(--text-secondary);">Create checklist items for this duty date</div></div>
             <span style="font-size: 20px;">✅</span>
           </div>
           <div class="todo-input-group">
@@ -2149,54 +2021,26 @@
           </div>
           <div id="todoList" class="todo-list"></div>
         </div>
-
       </div>
-
       <div class="duty-popup-actions">
-        <button type="button" class="btn btn-primary" onclick="saveDutyFromPopup()" id="popupSaveBtn">
-          <span>💾</span> Save Duty
-        </button>
-        <button type="button" class="btn btn-danger" onclick="deleteDutyFromPopup()" id="popupDeleteBtn" style="display: none;">
-          <span>🗑️</span> Delete Duty
-        </button>
+        <button type="button" class="btn btn-primary" onclick="saveDutyFromPopup()" id="popupSaveBtn"><span>💾</span> Save Duty</button>
+        <button type="button" class="btn btn-danger" onclick="deleteDutyFromPopup()" id="popupDeleteBtn" style="display: none;"><span>🗑️</span> Delete Duty</button>
         <button type="button" class="btn btn-outline" onclick="hideDutyPopup()">Close</button>
       </div>
-      </div>
+    </div>
   </div>
 
   <!-- Analytics Modal -->
   <div class="modal-overlay" id="analyticsModal" onclick="closeModalOnBackdrop(event)">
     <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">Duty Analytics</div>
-        <button class="close-modal" onclick="hideAnalytics()" aria-label="Close modal">×</button>
-      </div>
-
-      <div class="chart-container">
-        <canvas id="dutyTypeChart"></canvas>
-      </div>
-
-      <div class="chart-container">
-        <canvas id="monthlyHoursChart"></canvas>
-      </div>
-
+      <div class="modal-header"><div class="modal-title">Duty Analytics</div><button class="close-modal" onclick="hideAnalytics()">×</button></div>
+      <div class="chart-container"><canvas id="dutyTypeChart"></canvas></div>
+      <div class="chart-container"><canvas id="monthlyHoursChart"></canvas></div>
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-number" id="totalHours">0</div>
-          <div class="stat-label">Total Hours</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="overtimeHours">0</div>
-          <div class="stat-label">Overtime Hours</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="holidayCount">0</div>
-          <div class="stat-label">Holidays</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="avgDutyLength">0</div>
-          <div class="stat-label">Avg Duty Length</div>
-        </div>
+        <div class="stat-card"><div class="stat-number" id="totalHours">0</div><div class="stat-label">Total Hours</div></div>
+        <div class="stat-card"><div class="stat-number" id="overtimeHours">0</div><div class="stat-label">Overtime Hours</div></div>
+        <div class="stat-card"><div class="stat-number" id="holidayCount">0</div><div class="stat-label">Holidays</div></div>
+        <div class="stat-card"><div class="stat-number" id="avgDutyLength">0</div><div class="stat-label">Avg Duty Length</div></div>
       </div>
     </div>
   </div>
@@ -2204,10 +2048,7 @@
   <!-- Notification -->
   <div class="notification" id="notification">
     <div style="display: flex; justify-content: space-between; align-items: start;">
-      <div>
-        <h4 id="notificationTitle" style="font-weight: 600; margin-bottom: 4px;"></h4>
-        <p id="notificationMessage" style="font-size: 14px; color: var(--text-secondary);"></p>
-      </div>
+      <div><h4 id="notificationTitle" style="font-weight: 600; margin-bottom: 4px;"></h4><p id="notificationMessage" style="font-size: 14px; color: var(--text-secondary);"></p></div>
       <button onclick="hideNotification()" style="background: none; border: none; color: var(--text-secondary); font-size: 18px; cursor: pointer; margin-left: 16px;">×</button>
     </div>
   </div>
@@ -2219,12 +2060,7 @@
     let currentMonth = new Date();
     let selectedDate = getCurrentDate();
     let notificationSettings = JSON.parse(localStorage.getItem('notificationSettings')) || {
-      enabled: false,
-      dailySummary: false,
-      overtime: false,
-      '24hour': true,
-      '1hour': true,
-      '30min': true
+      enabled: false, dailySummary: false, overtime: false, '24hour': true, '1hour': true, '30min': true
     };
     let customNotifications = JSON.parse(localStorage.getItem('customNotifications')) || [];
     let todoItems = JSON.parse(localStorage.getItem('todoItems')) || [];
@@ -2232,151 +2068,72 @@
     let customNotificationTimeouts = {};
     let editingPopupNoteId = null;
     let backgroundNotificationCheck = null;
-    
-    // Touch swipe variables
-    let touchStartX = 0;
-    let touchEndX = 0;
+    let touchStartX = 0, touchEndX = 0;
 
-    // Utility functions
-    function getCurrentDate() {
-      return new Date().toISOString().split('T')[0];
-    }
+    function getCurrentDate() { return new Date().toISOString().split('T')[0]; }
+    function formatDate(dateStr) { return new Date(dateStr).toLocaleDateString(); }
+    function formatTime(timeStr) { return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+    function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
-    function formatDate(dateStr) {
-      return new Date(dateStr).toLocaleDateString();
-    }
-
-    function formatTime(timeStr) {
-      return new Date(`2000-01-01T${timeStr}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function generateId() {
-      return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    }
-
-    // Toggle custom duty type input visibility
     function togglePopupDutyTypeInput() {
       const select = document.getElementById('popupDutyType');
       const custom = document.getElementById('popupDutyTypeCustom');
       if (!select || !custom) return;
-      if (select.value === 'custom') {
-        custom.style.display = 'block';
-      } else {
-        custom.style.display = 'none';
-        custom.value = '';
-      }
+      if (select.value === 'custom') { custom.style.display = 'block'; }
+      else { custom.style.display = 'none'; custom.value = ''; }
     }
+    document.addEventListener('DOMContentLoaded', function () { const select = document.getElementById('popupDutyType'); if (select) select.addEventListener('change', togglePopupDutyTypeInput); });
 
-    // Attach change listener when DOM elements are available
-    document.addEventListener('DOMContentLoaded', function () {
-      const select = document.getElementById('popupDutyType');
-      if (select) select.addEventListener('change', togglePopupDutyTypeInput);
-    });
-
-    // Local Storage functions
-    function saveDuties() {
-      localStorage.setItem('duties', JSON.stringify(duties));
-      updateStats();
-      scheduleAllNotifications();
-    }
-
-    function saveNotes() {
-      localStorage.setItem('dutyNotes', JSON.stringify(notes));
-    }
-
+    function saveDuties() { localStorage.setItem('duties', JSON.stringify(duties)); updateStats(); scheduleAllNotifications(); }
+    function saveNotes() { localStorage.setItem('dutyNotes', JSON.stringify(notes)); }
     function saveNotificationSettings() {
       localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
-      if (notificationSettings.enabled) {
-        scheduleAllNotifications();
-        startBackgroundNotificationCheck();
-      } else {
-        clearAllNotifications();
-        stopBackgroundNotificationCheck();
-      }
+      if (notificationSettings.enabled) { scheduleAllNotifications(); startBackgroundNotificationCheck(); }
+      else { clearAllNotifications(); stopBackgroundNotificationCheck(); }
     }
 
-    // Fixed: Use standard browser notifications instead of OneSignal.send
     async function showNotification(title, message, type = 'info') {
       const notification = document.getElementById('notification');
       const titleEl = document.getElementById('notificationTitle');
       const messageEl = document.getElementById('notificationMessage');
-      
-      titleEl.textContent = title;
-      messageEl.textContent = message;
-      
+      titleEl.textContent = title; messageEl.textContent = message;
       notification.className = `notification ${type} show`;
-      
-      // Use standard browser notifications (works when site is open/background)
       if (notificationSettings.enabled && 'Notification' in window && Notification.permission === 'granted') {
-        try {
-          new Notification(title, { body: message, icon: 'https://cdn-icons-png.flaticon.com/512/2838/2838912.png' });
-        } catch(e) {
-          console.log('Browser notification error:', e);
-        }
+        try { new Notification(title, { body: message, icon: 'https://cdn-icons-png.flaticon.com/512/2838/2838912.png' }); } catch(e) { console.log('Browser notification error:', e); }
       }
-      
-      setTimeout(() => {
-        hideNotification();
-      }, 5000);
+      setTimeout(() => { hideNotification(); }, 5000);
     }
-
-    function hideNotification() {
-      const notification = document.getElementById('notification');
-      notification.classList.remove('show');
-    }
-
-    // Request notification permission
+    function hideNotification() { const notification = document.getElementById('notification'); notification.classList.remove('show'); }
     async function requestNotificationPermission() {
-      try {
-        if ('Notification' in window) {
-          const permission = await Notification.requestPermission();
-          if (permission === 'granted') {
-            showNotification('Notifications Enabled', 'You will now receive reminders for your duties', 'success');
-            return true;
-          }
-        }
-      } catch (e) {
-        console.error('Notification permission error:', e);
-      }
+      try { if ('Notification' in window) { const permission = await Notification.requestPermission(); if (permission === 'granted') { showNotification('Notifications Enabled', 'You will now receive reminders for your duties', 'success'); return true; } } } catch(e) { console.error('Notification permission error:', e); }
       return false;
     }
 
-    // Schedule notifications for all duties
     function scheduleAllNotifications() {
       if (!notificationSettings.enabled) return;
       clearAllNotifications();
       const now = new Date();
-      
       duties.forEach(duty => {
         const dutyDateTime = new Date(`${duty.date}T${duty.startTime}`);
         if (dutyDateTime > now) {
           if (notificationSettings['24hour']) {
-            const twentyFourHoursBefore = new Date(dutyDateTime);
-            twentyFourHoursBefore.setHours(twentyFourHoursBefore.getHours() - 24);
+            const twentyFourHoursBefore = new Date(dutyDateTime); twentyFourHoursBefore.setHours(twentyFourHoursBefore.getHours() - 24);
             if (twentyFourHoursBefore > now) {
-              const timeoutId = setTimeout(() => {
-                showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning');
-              }, twentyFourHoursBefore - now);
+              const timeoutId = setTimeout(() => { showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning'); }, twentyFourHoursBefore - now);
               notificationTimeouts[`${duty.id}-24hour`] = timeoutId;
             }
           }
           if (notificationSettings['1hour']) {
-            const oneHourBefore = new Date(dutyDateTime);
-            oneHourBefore.setHours(oneHourBefore.getHours() - 1);
+            const oneHourBefore = new Date(dutyDateTime); oneHourBefore.setHours(oneHourBefore.getHours() - 1);
             if (oneHourBefore > now) {
-              const timeoutId = setTimeout(() => {
-                showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning');
-              }, oneHourBefore - now);
+              const timeoutId = setTimeout(() => { showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning'); }, oneHourBefore - now);
               notificationTimeouts[`${duty.id}-1hour`] = timeoutId;
             }
           }
           if (notificationSettings['30min']) {
-            const thirtyMinutesBefore = new Date(dutyDateTime);
-            thirtyMinutesBefore.setMinutes(thirtyMinutesBefore.getMinutes() - 30);
+            const thirtyMinutesBefore = new Date(dutyDateTime); thirtyMinutesBefore.setMinutes(thirtyMinutesBefore.getMinutes() - 30);
             if (thirtyMinutesBefore > now) {
-              const timeoutId = setTimeout(() => {
-                showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning');
-              }, thirtyMinutesBefore - now);
+              const timeoutId = setTimeout(() => { showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning'); }, thirtyMinutesBefore - now);
               notificationTimeouts[`${duty.id}-30min`] = timeoutId;
             }
           }
@@ -2385,21 +2142,8 @@
       scheduleCustomNotifications();
     }
 
-    function clearAllNotifications() {
-      Object.keys(notificationTimeouts).forEach(key => {
-        clearTimeout(notificationTimeouts[key]);
-      });
-      notificationTimeouts = {};
-      clearCustomNotifications();
-    }
-
-    function clearCustomNotifications() {
-      Object.keys(customNotificationTimeouts).forEach(key => {
-        clearTimeout(customNotificationTimeouts[key]);
-      });
-      customNotificationTimeouts = {};
-    }
-
+    function clearAllNotifications() { Object.keys(notificationTimeouts).forEach(key => clearTimeout(notificationTimeouts[key])); notificationTimeouts = {}; clearCustomNotifications(); }
+    function clearCustomNotifications() { Object.keys(customNotificationTimeouts).forEach(key => clearTimeout(customNotificationTimeouts[key])); customNotificationTimeouts = {}; }
     function scheduleCustomNotifications() {
       if (!notificationSettings.enabled) return;
       clearCustomNotifications();
@@ -2407,10 +2151,7 @@
       customNotifications.forEach(custom => {
         const scheduledTime = new Date(custom.datetime);
         if (scheduledTime > now) {
-          const timeoutId = setTimeout(() => {
-            showNotification(custom.title || 'Manual Reminder', custom.message || `Manual reminder for ${scheduledTime.toLocaleString()}`, 'info');
-            delete customNotificationTimeouts[custom.id];
-          }, scheduledTime - now);
+          const timeoutId = setTimeout(() => { showNotification(custom.title || 'Manual Reminder', custom.message || `Manual reminder for ${scheduledTime.toLocaleString()}`, 'info'); delete customNotificationTimeouts[custom.id]; }, scheduledTime - now);
           customNotificationTimeouts[custom.id] = timeoutId;
         }
       });
@@ -2420,47 +2161,23 @@
       const dateInput = document.getElementById(`manualNotificationDate${section}`);
       const timeInput = document.getElementById(`manualNotificationTime${section}`);
       if (!dateInput || !timeInput) return;
-      const date = dateInput.value;
-      const time = timeInput.value;
-      if (!date || !time) {
-        showNotification('Error', 'Please select both a date and time', 'error');
-        return;
-      }
+      const date = dateInput.value, time = timeInput.value;
+      if (!date || !time) { showNotification('Error', 'Please select both a date and time', 'error'); return; }
       const dateTimeString = `${date}T${time}:00`;
       const scheduledTime = new Date(dateTimeString);
       const titleInput = document.getElementById(`manualNotificationTitle${section}`);
       const titleText = titleInput && titleInput.value.trim() ? titleInput.value.trim() : 'Manual Reminder';
       const now = new Date();
-      if (isNaN(scheduledTime.getTime()) || scheduledTime <= now) {
-        showNotification('Error', 'Please choose a future date and time', 'error');
-        return;
-      }
-      const customNotification = {
-        id: generateId(),
-        datetime: dateTimeString,
-        title: titleText,
-        message: `Scheduled notification for ${scheduledTime.toLocaleString()}`
-      };
+      if (isNaN(scheduledTime.getTime()) || scheduledTime <= now) { showNotification('Error', 'Please choose a future date and time', 'error'); return; }
+      const customNotification = { id: generateId(), datetime: dateTimeString, title: titleText, message: `Scheduled notification for ${scheduledTime.toLocaleString()}` };
       customNotifications.push(customNotification);
       localStorage.setItem('customNotifications', JSON.stringify(customNotifications));
       showNotification('Manual Reminder Saved', `Notification scheduled for ${scheduledTime.toLocaleString()}`, 'success');
       scheduleAllNotifications();
     }
 
-    function startBackgroundNotificationCheck() {
-      if (backgroundNotificationCheck) return;
-      backgroundNotificationCheck = setInterval(() => {
-        checkImmediateNotifications();
-      }, 60000);
-    }
-
-    function stopBackgroundNotificationCheck() {
-      if (backgroundNotificationCheck) {
-        clearInterval(backgroundNotificationCheck);
-        backgroundNotificationCheck = null;
-      }
-    }
-
+    function startBackgroundNotificationCheck() { if (backgroundNotificationCheck) return; backgroundNotificationCheck = setInterval(() => { checkImmediateNotifications(); }, 60000); }
+    function stopBackgroundNotificationCheck() { if (backgroundNotificationCheck) { clearInterval(backgroundNotificationCheck); backgroundNotificationCheck = null; } }
     function checkImmediateNotifications() {
       if (!notificationSettings.enabled) return;
       const now = new Date();
@@ -2478,42 +2195,18 @@
       });
     }
 
-    // Mobile menu functions
-    function toggleMobileMenu() {
-      const menu = document.getElementById('mobileMenu');
-      menu.classList.toggle('active');
-      document.getElementById('mobileDutyDate').value = selectedDate;
-    }
-
-    function closeMobileMenuOnBackdrop(event) {
-      if (event.target === event.currentTarget) {
-        toggleMobileMenu();
-      }
-    }
-
-    // Theme functions
+    function toggleMobileMenu() { const menu = document.getElementById('mobileMenu'); menu.classList.toggle('active'); document.getElementById('mobileDutyDate').value = selectedDate; }
+    function closeMobileMenuOnBackdrop(event) { if (event.target === event.currentTarget) { toggleMobileMenu(); } }
     function toggleTheme() {
       document.body.classList.toggle('dark');
       const isDark = document.body.classList.contains('dark');
-      const themeIcon = document.getElementById('themeIcon');
-      const themeText = document.getElementById('themeText');
-      const mobileThemeIcon = document.getElementById('mobileThemeIcon');
-      const mobileThemeText = document.getElementById('mobileThemeText');
-      if (isDark) {
-        themeIcon.textContent = '☀️';
-        themeText.textContent = 'Light';
-        mobileThemeIcon.textContent = '☀️';
-        mobileThemeText.textContent = 'Light Mode';
-      } else {
-        themeIcon.textContent = '🌙';
-        themeText.textContent = 'Dark';
-        mobileThemeIcon.textContent = '🌙';
-        mobileThemeText.textContent = 'Dark Mode';
-      }
+      document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+      document.getElementById('themeText').textContent = isDark ? 'Light' : 'Dark';
+      document.getElementById('mobileThemeIcon').textContent = isDark ? '☀️' : '🌙';
+      document.getElementById('mobileThemeText').textContent = isDark ? 'Light Mode' : 'Dark Mode';
       localStorage.setItem('theme', isDark ? 'dark' : 'light');
     }
 
-    // Notification settings
     function toggleNotification(type) {
       notificationSettings[type] = !notificationSettings[type];
       saveNotificationSettings();
@@ -2527,19 +2220,10 @@
         if (desktopOptions) desktopOptions.style.display = notificationSettings[type] ? 'block' : 'none';
         if (mobileOptions) mobileOptions.style.display = notificationSettings[type] ? 'block' : 'none';
       }
-      if (type === 'enabled' && notificationSettings[type]) {
-        requestNotificationPermission().then(() => {
-          showNotification('Notifications Enabled', 'You will now receive reminders before your duties start', 'success');
-          scheduleAllNotifications();
-        });
-      } else if (type === 'enabled' && !notificationSettings[type]) {
-        clearAllNotifications();
-        showNotification('Notifications Disabled', 'You will no longer receive duty reminders', 'info');
-      } else {
-        showNotification('Settings Updated', `${type === 'dailySummary' ? 'Daily Summary' : 'Overtime Alerts'} ${notificationSettings[type] ? 'enabled' : 'disabled'}`, 'success');
-      }
+      if (type === 'enabled' && notificationSettings[type]) { requestNotificationPermission().then(() => { showNotification('Notifications Enabled', 'You will now receive reminders before your duties start (even when site closed!)', 'success'); scheduleAllNotifications(); }); }
+      else if (type === 'enabled' && !notificationSettings[type]) { clearAllNotifications(); showNotification('Notifications Disabled', 'You will no longer receive duty reminders', 'info'); }
+      else { showNotification('Settings Updated', `${type === 'dailySummary' ? 'Daily Summary' : 'Overtime Alerts'} ${notificationSettings[type] ? 'enabled' : 'disabled'}`, 'success'); }
     }
-
     function toggleNotificationOption(option) {
       notificationSettings[option] = !notificationSettings[option];
       saveNotificationSettings();
@@ -2549,16 +2233,13 @@
       if (mobileToggle) mobileToggle.checked = notificationSettings[option];
       showNotification('Notification Setting Updated', `${option === '24hour' ? '24 Hours Before' : option === '1hour' ? '1 Hour Before' : '30 Minutes Before'} notifications ${notificationSettings[option] ? 'enabled' : 'disabled'}`, 'success');
     }
-
     function testNotification() {
-      if (!notificationSettings.enabled) {
-        showNotification('Notifications Disabled', 'Please enable notifications first', 'warning');
-        return;
-      }
+      if (!notificationSettings.enabled) { showNotification('Notifications Disabled', 'Please enable notifications first', 'warning'); return; }
       showNotification('Test Notification', 'This is a test notification. You will receive similar alerts 24h, 1h, and 30min before your duties.', 'info');
+      sendBackendNotification('Test Notification', 'Your push notification system is working!', '', '', 'test');
     }
 
-    // Duty management functions
+    // MODIFIED: Add duty with backend scheduling for closed-browser notifications
     function addDuty() { 
       const date = document.getElementById('dutyDate').value;
       const startTime = document.getElementById('startTime').value;
@@ -2567,15 +2248,19 @@
       const notesVal = document.getElementById('dutyNotes').value;
       if (!date || !startTime || !endTime) { showNotification('Error', 'Please fill in all required fields', 'error'); return; }
       if (duties.find(duty => duty.date === date)) { showNotification('Error', 'Duty already exists for this date', 'error'); return; }
-      duties.push({ id: generateId(), date, startTime, endTime, type, notes: notesVal, createdAt: new Date().toISOString() });
+      const newDuty = { id: generateId(), date, startTime, endTime, type, notes: notesVal, createdAt: new Date().toISOString() };
+      duties.push(newDuty);
       saveDuties(); renderCalendar();
       document.getElementById('dutyDate').value = getCurrentDate();
       document.getElementById('startTime').value = '08:00';
       document.getElementById('endTime').value = '17:00';
       document.getElementById('dutyType').value = 'regular';
       document.getElementById('dutyNotes').value = '';
-      showNotification('Success', 'Duty added successfully', 'success');
+      showNotification('Success', 'Duty added successfully - Reminders scheduled!', 'success');
+      // Schedule backend reminders for when browser is closed
+      scheduleDutyReminders(newDuty);
     }
+    
     function addDutyMobile() { 
       const date = document.getElementById('mobileDutyDate').value;
       const startTime = document.getElementById('mobileStartTime').value;
@@ -2584,16 +2269,19 @@
       const notesVal = document.getElementById('mobileDutyNotes').value;
       if (!date || !startTime || !endTime) { showNotification('Error', 'Please fill in all required fields', 'error'); return; }
       if (duties.find(duty => duty.date === date)) { showNotification('Error', 'Duty already exists for this date', 'error'); return; }
-      duties.push({ id: generateId(), date, startTime, endTime, type, notes: notesVal, createdAt: new Date().toISOString() });
+      const newDuty = { id: generateId(), date, startTime, endTime, type, notes: notesVal, createdAt: new Date().toISOString() };
+      duties.push(newDuty);
       saveDuties(); renderCalendar();
       document.getElementById('mobileDutyDate').value = getCurrentDate();
       document.getElementById('mobileStartTime').value = '08:00';
       document.getElementById('mobileEndTime').value = '17:00';
       document.getElementById('mobileDutyType').value = 'regular';
       document.getElementById('mobileDutyNotes').value = '';
-      showNotification('Success', 'Duty added successfully', 'success');
+      showNotification('Success', 'Duty added successfully - Reminders scheduled!', 'success');
       toggleMobileMenu();
+      scheduleDutyReminders(newDuty);
     }
+    
     function removeDuty() {
       const date = document.getElementById('dutyDate').value;
       if (!date) { showNotification('Error', 'Please select a date', 'error'); return; }
@@ -2615,14 +2303,8 @@
       showNotification('Success', 'Duty removed successfully', 'success');
       toggleMobileMenu();
     }
-    function clearDutyNotifications(dutyId) {
-      ['24hour', '1hour', '30min'].forEach(period => {
-        const key = `${dutyId}-${period}`;
-        if (notificationTimeouts[key]) { clearTimeout(notificationTimeouts[key]); delete notificationTimeouts[key]; }
-      });
-    }
+    function clearDutyNotifications(dutyId) { ['24hour', '1hour', '30min'].forEach(period => { const key = `${dutyId}-${period}`; if (notificationTimeouts[key]) { clearTimeout(notificationTimeouts[key]); delete notificationTimeouts[key]; } }); }
 
-    // Notes functions
     function showNotesView() { const popup = document.getElementById('allNotesPopup'); popup.classList.add('active'); renderAllNotes(); }
     function hideAllNotesPopup() { document.getElementById('allNotesPopup').classList.remove('active'); }
     function closeAllNotesPopupOnBackdrop(event) { if (event.target === event.currentTarget) hideAllNotesPopup(); }
@@ -2639,56 +2321,28 @@
     function addOrUpdatePopupNote() { const content = document.getElementById('popupNoteInput').value.trim(); const button = document.getElementById('popupNoteAddBtn'); if (!content) { showNotification('Error', 'Enter a note before adding', 'error'); return; } if (editingPopupNoteId) { const noteIndex = notes.findIndex(note => note.id === editingPopupNoteId); if (noteIndex !== -1) { notes[noteIndex].content = content; notes[noteIndex].updatedAt = new Date().toISOString(); showNotification('Success', 'Note updated', 'success'); } } else { notes.push({ id: generateId(), date: selectedDate, content, createdAt: new Date().toISOString() }); showNotification('Success', 'Note added to this date', 'success'); } saveNotes(); renderPopupNotes(selectedDate); document.getElementById('popupNoteInput').value = ''; if (button) button.textContent = 'Add'; editingPopupNoteId = null; }
     function editPopupNote(noteId) { const note = notes.find(item => item.id === noteId); if (!note) return; const noteInput = document.getElementById('popupNoteInput'); const button = document.getElementById('popupNoteAddBtn'); if (noteInput) noteInput.value = note.content; if (button) button.textContent = 'Update'; editingPopupNoteId = noteId; }
     function deletePopupNote(noteId) { const noteIndex = notes.findIndex(note => note.id === noteId); if (noteIndex === -1) return; notes.splice(noteIndex, 1); saveNotes(); renderPopupNotes(selectedDate); showNotification('Success', 'Note removed', 'success'); }
-
-    // Todo functions
     function saveTodoItems() { localStorage.setItem('todoItems', JSON.stringify(todoItems)); }
     function renderTodoList(dateStr) { const todoList = document.getElementById('todoList'); if (!todoList) return; todoList.innerHTML = ''; const dateTodos = todoItems.filter(item => item.date === dateStr); if (dateTodos.length === 0) { todoList.innerHTML = '<div style="text-align: center; padding: 12px; color: var(--text-secondary);">No tasks yet for this date</div>'; return; } dateTodos.forEach(item => { const todoElement = document.createElement('div'); todoElement.className = 'todo-item'; todoElement.innerHTML = `<div class="todo-task ${item.completed ? 'todo-item-complete' : ''}"><label><input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleTodoComplete('${item.id}')"><span>${item.text}</span></label></div><button class="btn btn-outline" style="padding: 8px 12px;" onclick="deleteTodoItem('${item.id}')">Delete</button>`; todoList.appendChild(todoElement); }); }
     function addTodoItem() { const input = document.getElementById('todoInput'); if (!input) return; const text = input.value.trim(); if (!text) { showNotification('Error', 'Please enter a task', 'error'); return; } todoItems.push({ id: generateId(), date: selectedDate, text, completed: false, createdAt: new Date().toISOString() }); saveTodoItems(); input.value = ''; renderTodoList(selectedDate); showNotification('Task added', 'Your task has been saved for this date', 'success'); }
     function toggleTodoComplete(todoId) { const todoIndex = todoItems.findIndex(item => item.id === todoId); if (todoIndex === -1) return; todoItems[todoIndex].completed = !todoItems[todoIndex].completed; saveTodoItems(); renderTodoList(selectedDate); }
     function deleteTodoItem(todoId) { const todoIndex = todoItems.findIndex(item => item.id === todoId); if (todoIndex === -1) return; todoItems.splice(todoIndex, 1); saveTodoItems(); renderTodoList(selectedDate); showNotification('Task removed', 'The task was deleted successfully', 'success'); }
-
-    // Duty Popup Functions
     function showDutyPopup(dateStr) { selectedDate = dateStr; const popup = document.getElementById('dutyPopup'); document.getElementById('dutyPopupDate').textContent = formatDate(dateStr); popup.classList.add('active'); renderExistingDuty(dateStr); renderTodoList(dateStr); renderPopupNotes(dateStr); const noteInput = document.getElementById('popupNoteInput'); const noteButton = document.getElementById('popupNoteAddBtn'); if (noteInput) noteInput.value = ''; if (noteButton) noteButton.textContent = 'Add'; editingPopupNoteId = null; const todoInput = document.getElementById('todoInput'); if (todoInput) todoInput.value = ''; }
     function hideDutyPopup() { document.getElementById('dutyPopup').classList.remove('active'); }
     function closeDutyPopupOnBackdrop(event) { if (event.target === event.currentTarget) hideDutyPopup(); }
     function renderExistingDuty(dateStr) { const dutyInfo = document.getElementById('existingDutyInfo'); const deleteBtn = document.getElementById('popupDeleteBtn'); const duty = duties.find(d => d.date === dateStr); if (duty) { dutyInfo.innerHTML = `<div style="background: var(--bg-tertiary); padding: 12px; border-radius: 8px; margin-bottom: 12px;"><div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><strong>${duty.type.charAt(0).toUpperCase() + duty.type.slice(1)} Duty</strong><span>${duty.startTime} - ${duty.endTime}</span></div>${duty.notes ? `<div style="font-size: 14px;">${duty.notes}</div>` : ''}</div>`; deleteBtn.style.display = 'block'; document.getElementById('popupStartTime').value = duty.startTime; document.getElementById('popupEndTime').value = duty.endTime; const popupTypeSelect = document.getElementById('popupDutyType'); const popupTypeCustom = document.getElementById('popupDutyTypeCustom'); const hasOption = Array.from(popupTypeSelect.options).some(o => o.value === duty.type); if (hasOption) { popupTypeSelect.value = duty.type; if (popupTypeCustom) popupTypeCustom.value = ''; } else { popupTypeSelect.value = 'custom'; if (popupTypeCustom) popupTypeCustom.value = duty.type; } if (popupTypeSelect) togglePopupDutyTypeInput(); } else { dutyInfo.innerHTML = '<div style="text-align: center; padding: 10px; color: var(--text-secondary);">No duty scheduled for this date</div>'; deleteBtn.style.display = 'none'; document.getElementById('popupStartTime').value = '08:00'; document.getElementById('popupEndTime').value = '17:00'; document.getElementById('popupDutyType').value = 'regular'; const customReset = document.getElementById('popupDutyTypeCustom'); if (customReset) customReset.value = ''; if (document.getElementById('popupDutyType')) togglePopupDutyTypeInput(); } }
-    function saveDutyFromPopup() { const date = selectedDate; const startTime = document.getElementById('popupStartTime').value; const endTime = document.getElementById('popupEndTime').value; let type = document.getElementById('popupDutyType').value; const customInput = document.getElementById('popupDutyTypeCustom'); if (type === 'custom' && customInput && customInput.value.trim()) type = customInput.value.trim(); if (!startTime || !endTime) { showNotification('Error', 'Please fill in all required fields', 'error'); return; } const existingIndex = duties.findIndex(duty => duty.date === date); if (existingIndex !== -1) { duties[existingIndex] = { ...duties[existingIndex], startTime, endTime, type }; } else { duties.push({ id: generateId(), date, startTime, endTime, type, notes: '', createdAt: new Date().toISOString() }); } saveDuties(); renderCalendar(); hideDutyPopup(); showNotification('Success', 'Duty saved successfully', 'success'); }
+    function saveDutyFromPopup() { const date = selectedDate; const startTime = document.getElementById('popupStartTime').value; const endTime = document.getElementById('popupEndTime').value; let type = document.getElementById('popupDutyType').value; const customInput = document.getElementById('popupDutyTypeCustom'); if (type === 'custom' && customInput && customInput.value.trim()) type = customInput.value.trim(); if (!startTime || !endTime) { showNotification('Error', 'Please fill in all required fields', 'error'); return; } const existingIndex = duties.findIndex(duty => duty.date === date); if (existingIndex !== -1) { duties[existingIndex] = { ...duties[existingIndex], startTime, endTime, type }; } else { duties.push({ id: generateId(), date, startTime, endTime, type, notes: '', createdAt: new Date().toISOString() }); } saveDuties(); renderCalendar(); hideDutyPopup(); showNotification('Success', 'Duty saved successfully', 'success'); scheduleDutyReminders({ date, startTime, type }); }
     function deleteDutyFromPopup() { const date = selectedDate; const dutyIndex = duties.findIndex(duty => duty.date === date); if (dutyIndex === -1) { showNotification('Error', 'No duty found for this date', 'error'); return; } clearDutyNotifications(duties[dutyIndex].id); duties.splice(dutyIndex, 1); saveDuties(); renderCalendar(); hideDutyPopup(); showNotification('Success', 'Duty deleted successfully', 'success'); }
-
-    // Calendar functions
     function changeMonth(direction) { currentMonth.setMonth(currentMonth.getMonth() + direction); renderCalendar(); }
     function handleDateClick(dateStr) { selectedDate = dateStr; document.getElementById('dutyDate').value = dateStr; document.getElementById('mobileDutyDate').value = dateStr; showDutyPopup(dateStr); const duty = duties.find(d => d.date === dateStr); if (duty) { showNotification('Duty Info', `${duty.type.charAt(0).toUpperCase() + duty.type.slice(1)} duty from ${duty.startTime} to ${duty.endTime}`, 'info'); } }
     function renderCalendar() { const calendar = document.getElementById('calendarGrid'); const title = document.getElementById('calendarTitle'); const year = currentMonth.getFullYear(); const month = currentMonth.getMonth(); const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; title.textContent = `${monthNames[month]} ${year}`; calendar.innerHTML = ''; const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; dayNames.forEach(day => { const dayElement = document.createElement('div'); dayElement.className = 'calendar-day-name'; dayElement.textContent = day; calendar.appendChild(dayElement); }); const firstDay = new Date(year, month, 1).getDay(); const mondayFirstDay = (firstDay === 0) ? 6 : firstDay - 1; const daysInMonth = new Date(year, month + 1, 0).getDate(); for (let i = 0; i < mondayFirstDay; i++) { const emptyElement = document.createElement('div'); emptyElement.className = 'calendar-date other-month'; calendar.appendChild(emptyElement); } const today = getCurrentDate(); for (let day = 1; day <= daysInMonth; day++) { const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`; const duty = duties.find(d => d.date === dateStr); const dateNotes = notes.filter(note => note.date === dateStr); const dateElement = document.createElement('div'); let classes = 'calendar-date'; if (dateStr === today) classes += ' today'; if (duty) classes += ' duty ' + duty.type; dateElement.className = classes; dateElement.onclick = () => handleDateClick(dateStr); const dateNumber = document.createElement('div'); dateNumber.className = 'date-number'; dateNumber.textContent = day; dateElement.appendChild(dateNumber); if (dateNotes.length > 0) { const noteIndicator = document.createElement('div'); noteIndicator.className = 'duty-time'; noteIndicator.style.backgroundColor = 'rgba(59, 130, 246, 0.2)'; noteIndicator.textContent = '📝 ' + dateNotes.length; dateElement.appendChild(noteIndicator); } if (duty) { const dutyTime = document.createElement('div'); dutyTime.className = 'duty-time'; dutyTime.textContent = duty.startTime; dateElement.appendChild(dutyTime); } calendar.appendChild(dateElement); } }
-
-    // Stats functions
     function updateStats() { const currentDate = new Date(); const currentMonthDuties = duties.filter(duty => { const dutyDate = new Date(duty.date); return dutyDate.getMonth() === currentDate.getMonth() && dutyDate.getFullYear() === currentDate.getFullYear(); }); const futureDuties = duties.filter(duty => new Date(duty.date) > currentDate); const nextDuty = futureDuties.length > 0 ? formatDate(futureDuties.sort((a, b) => new Date(a.date) - new Date(b.date))[0].date) : '--'; const totalHours = duties.reduce((sum, duty) => { const start = new Date(`2000-01-01T${duty.startTime}`); const end = new Date(`2000-01-01T${duty.endTime}`); const hours = (end - start) / (1000 * 60 * 60); return sum + (hours > 0 ? hours : 0); }, 0); const avgHours = duties.length > 0 ? Math.round(totalHours / duties.length) : 0; document.getElementById('totalDuties').textContent = duties.length; document.getElementById('monthDuties').textContent = currentMonthDuties.length; document.getElementById('nextDuty').textContent = nextDuty; document.getElementById('avgHours').textContent = avgHours; }
-
-    // Analytics functions
     function showAnalytics() { const modal = document.getElementById('analyticsModal'); modal.classList.add('active'); renderAnalytics(); }
     function hideAnalytics() { document.getElementById('analyticsModal').classList.remove('active'); }
     function closeModalOnBackdrop(event) { if (event.target === event.currentTarget) hideAnalytics(); }
     function renderAnalytics() { const dutyTypes = { regular: 0, overtime: 0, holiday: 0, training: 0, meeting: 0, emergency: 0 }; let totalHours = 0, overtimeHours = 0, holidayCount = 0, totalDutyLength = 0; duties.forEach(duty => { dutyTypes[duty.type] = (dutyTypes[duty.type] || 0) + 1; const start = new Date(`2000-01-01T${duty.startTime}`); const end = new Date(`2000-01-01T${duty.endTime}`); const hours = (end - start) / (1000 * 60 * 60); totalHours += hours; totalDutyLength += hours; if (duty.type === 'overtime') overtimeHours += hours; if (duty.type === 'holiday') holidayCount++; }); const avgDutyLength = duties.length > 0 ? (totalDutyLength / duties.length).toFixed(1) : 0; document.getElementById('totalHours').textContent = Math.round(totalHours); document.getElementById('overtimeHours').textContent = Math.round(overtimeHours); document.getElementById('holidayCount').textContent = holidayCount; document.getElementById('avgDutyLength').textContent = avgDutyLength; const dutyTypeCtx = document.getElementById('dutyTypeChart').getContext('2d'); if (window.dutyTypeChartInstance) window.dutyTypeChartInstance.destroy(); window.dutyTypeChartInstance = new Chart(dutyTypeCtx, { type: 'doughnut', data: { labels: ['Regular', 'Overtime', 'Holiday', 'Training', 'Meeting', 'Emergency'], datasets: [{ data: [dutyTypes.regular, dutyTypes.overtime, dutyTypes.holiday, dutyTypes.training, dutyTypes.meeting, dutyTypes.emergency], backgroundColor: ['rgba(34,197,94,0.7)','rgba(249,115,22,0.7)','rgba(139,92,246,0.7)','rgba(6,182,212,0.7)','rgba(236,72,153,0.7)','rgba(220,38,38,0.7)'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Duty Types Distribution', font: { size: 16 } }, legend: { position: 'bottom' } } } }); const monthlyHoursCtx = document.getElementById('monthlyHoursChart').getContext('2d'); if (window.monthlyHoursChartInstance) window.monthlyHoursChartInstance.destroy(); const monthlyHours = Array(12).fill(0); const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; duties.forEach(duty => { const dutyDate = new Date(duty.date); const month = dutyDate.getMonth(); const start = new Date(`2000-01-01T${duty.startTime}`); const end = new Date(`2000-01-01T${duty.endTime}`); const hours = (end - start) / (1000 * 60 * 60); monthlyHours[month] += hours; }); window.monthlyHoursChartInstance = new Chart(monthlyHoursCtx, { type: 'bar', data: { labels: monthNames, datasets: [{ label: 'Hours', data: monthlyHours, backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Monthly Hours', font: { size: 16 } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Hours' } } } } }); }
-
-    // Export to PDF (simplified - full version works)
-    function exportToPDF() { 
-      const { jsPDF } = window.jspdf; 
-      const doc = new jsPDF(); 
-      doc.setFontSize(20); 
-      doc.text("Duty Calendar Report", 105, 20, { align: "center" }); 
-      doc.setFontSize(12); 
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 35, { align: "center" }); 
-      doc.setFontSize(14); 
-      doc.text(`Total Duties: ${duties.length}`, 20, 55); 
-      doc.save(`duty_calendar_${new Date().toISOString().slice(0,10)}.pdf`); 
-      showNotification('Export Successful', 'PDF has been generated', 'success'); 
-    }
-
-    // Touch swipe functions
+    function exportToPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.setFontSize(20); doc.text("Duty Calendar Report", 105, 20, { align: "center" }); doc.setFontSize(12); doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 35, { align: "center" }); doc.setFontSize(14); doc.text(`Total Duties: ${duties.length}`, 20, 55); doc.save(`duty_calendar_${new Date().toISOString().slice(0,10)}.pdf`); showNotification('Export Successful', 'PDF has been generated', 'success'); }
     function handleTouchStart(e) { touchStartX = e.changedTouches[0].screenX; }
-    function handleTouchEnd(e) { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }
-    function handleSwipe() { const threshold = 50; const diff = touchEndX - touchStartX; if (Math.abs(diff) > threshold) { if (diff > 0) changeMonth(-1); else changeMonth(1); } }
-
-    // Initialize app
+    function handleTouchEnd(e) { touchEndX = e.changedTouches[0].screenX; const threshold = 50; const diff = touchEndX - touchStartX; if (Math.abs(diff) > threshold) { if (diff > 0) changeMonth(-1); else changeMonth(1); } }
     function initializeApp() {
       selectedDate = getCurrentDate();
       document.getElementById('dutyDate').value = selectedDate;
@@ -2726,15 +2380,8 @@
       updateStats();
       if (notificationSettings.enabled) { requestNotificationPermission().then(() => { scheduleAllNotifications(); startBackgroundNotificationCheck(); }); }
       checkImmediateNotifications();
-      
-      // Check OneSignal status after 3 seconds
-      setTimeout(() => {
-        if (window.checkOneSignalStatus) {
-          window.checkOneSignalStatus();
-        }
-      }, 3000);
+      setTimeout(() => { if (window.checkOneSignalStatus) { window.checkOneSignalStatus(); } }, 3000);
     }
-
     document.addEventListener('DOMContentLoaded', initializeApp);
     document.addEventListener('visibilitychange', function() { if (!document.hidden && notificationSettings.enabled) checkImmediateNotifications(); });
   </script>
