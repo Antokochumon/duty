@@ -6,147 +6,19 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="description" content="Professional Duty Calendar App - Advanced scheduling with smart reminders">
   <title>Duty Calendar 2025</title>
-  <!-- OneSignal SDK for push notifications (works when site is closed) - FIXED VERSION -->
+  
+  <!-- OneSignal SDK for push notifications -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-  <script>
-    // Fixed OneSignal initialization for v16 SDK
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    
-    OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
-        safari_web_id: "web.onesignal.auto.74ec48f7-2aba-4801-83dd-e3b373c160d1",
-        allowLocalhostAsSecureOrigin: true,
-        notifyButton: {
-          enable: true,
-          displayPredicate: () => true,
-        },
-      });
-      
-      // Auto-prompt for permission after a short delay
-      setTimeout(async () => {
-        const permission = await OneSignal.Notifications.permission;
-        if (permission === "default") {
-          const result = await OneSignal.Notifications.requestPermission();
-          if (result) {
-            console.log("Notification permission granted");
-          }
-        }
-      }, 2000);
-    });
-    
-    // Debug function to verify OneSignal setup - FIXED for v16
-    window.checkOneSignalStatus = async function() {
-      if (window.OneSignal) {
-        const isPushSupported = await window.OneSignal.Notifications.isPushSupported();
-        const permission = await window.OneSignal.Notifications.permission;
-        const userId = await OneSignal.User.PushSubscription.id;
-        console.log("OneSignal Status:", { isPushSupported, permission, userId });
-        if (userId) {
-          showNotification("✅ Notifications Ready", "Push notifications are properly configured!", "success");
-          await registerUserWithBackend(userId);
-        }
-      }
-    };
-    
-    // Register user with Google Apps Script backend
-    async function registerUserWithBackend(onesignalId) {
-      try {
-        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `action=register&onesignal_id=${onesignalId}`
-        });
-        console.log("User registered with backend");
-      } catch(e) { console.log("Backend registration error:", e); }
-    }
-    
-    // Send duty notification via Google Apps Script (works when browser closed)
-    async function sendBackendNotification(title, message, dutyDate, startTime, dutyType) {
-      try {
-        let onesignalId = null;
-        if (window.OneSignal) {
-          onesignalId = await window.OneSignal.User.getOnesignalId();
-        }
-        
-        const payload = new URLSearchParams({
-          action: 'send_notification',
-          title: title,
-          message: message,
-          duty_date: dutyDate || '',
-          duty_time: startTime || '',
-          duty_type: dutyType || '',
-          onesignal_id: onesignalId || ''
-        });
-        
-        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: payload
-        });
-        console.log("Backend notification triggered:", title);
-      } catch(e) { console.log("Backend notification error:", e); }
-    }
-    
-    // Schedule duty reminders to be sent via backend at exact times
-    async function scheduleDutyReminders(duty) {
-      const dutyDateTime = new Date(`${duty.date}T${duty.startTime}`);
-      const now = new Date();
-      
-      // 24 hours before
-      const twentyFourHour = new Date(dutyDateTime);
-      twentyFourHour.setHours(twentyFourHour.getHours() - 24);
-      if (twentyFourHour > now && notificationSettings['24hour']) {
-        const delayMs = twentyFourHour - now;
-        setTimeout(async () => {
-          await sendBackendNotification(
-            '⏰ Upcoming Duty Tomorrow',
-            `You have a ${duty.type} duty scheduled for tomorrow at ${duty.startTime}`,
-            duty.date, duty.startTime, duty.type
-          );
-          showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning');
-        }, delayMs);
-      }
-      
-      // 1 hour before
-      const oneHour = new Date(dutyDateTime);
-      oneHour.setHours(oneHour.getHours() - 1);
-      if (oneHour > now && notificationSettings['1hour']) {
-        const delayMs = oneHour - now;
-        setTimeout(async () => {
-          await sendBackendNotification(
-            '⏰ Upcoming Duty in 1 Hour',
-            `Your ${duty.type} duty starts at ${duty.startTime}`,
-            duty.date, duty.startTime, duty.type
-          );
-          showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning');
-        }, delayMs);
-      }
-      
-      // 30 minutes before
-      const thirtyMin = new Date(dutyDateTime);
-      thirtyMin.setMinutes(thirtyMin.getMinutes() - 30);
-      if (thirtyMin > now && notificationSettings['30min']) {
-        const delayMs = thirtyMin - now;
-        setTimeout(async () => {
-          await sendBackendNotification(
-            '⏰ Upcoming Duty in 30 Minutes',
-            `Your ${duty.type} duty starts soon at ${duty.startTime}`,
-            duty.date, duty.startTime, duty.type
-          );
-          showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning');
-        }, delayMs);
-      }
-    }
-  </script>
+  
   <!-- Add jsPDF library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  
   <!-- Add Chart.js for analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <style>
+    /* Your existing CSS styles remain exactly the same */
     :root {
       --primary: #3b82f6;
       --secondary: #10b981;
@@ -2157,7 +2029,7 @@
       });
     }
 
-    // UPDATED: scheduleManualNotification now stores data to Google Sheets
+    // FIXED: Updated to handle CORS properly with no-cors mode
     async function scheduleManualNotification(section) {
       const dateInput = document.getElementById(`manualNotificationDate${section}`);
       const timeInput = document.getElementById(`manualNotificationTime${section}`);
@@ -2171,23 +2043,16 @@
       const now = new Date();
       if (isNaN(scheduledTime.getTime()) || scheduledTime <= now) { showNotification('Error', 'Please choose a future date and time', 'error'); return; }
       
-      // Get OneSignal Subscription ID
-      let onesignalId = null;
-      if (window.OneSignal) {
-        onesignalId = await OneSignal.User.PushSubscription.id; 
-      }
-      
-      // Store to Google Sheets via Apps Script
+      // Store to Google Sheets using no-cors mode (won't get response but request will be sent)
       try {
         const payload = new URLSearchParams({
           action: 'store_scheduled_notification',
-          subscription_id: onesignalId || 'unknown',
           selected_date: date,
           selected_time: time,
           title: titleText,
           timestamp: new Date().toISOString()
         });
-        await fetch('https://script.google.com/macros/s/AKfycbxvVK3kGDzsM0MIRl22Uot7H4Sksk3mP6ja4O7pRprb2fE58a7XZBxLMKxqGYa_xnHu/exec', {
+        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -2199,8 +2064,135 @@
       const customNotification = { id: generateId(), datetime: dateTimeString, title: titleText, message: `Scheduled notification for ${scheduledTime.toLocaleString()}` };
       customNotifications.push(customNotification);
       localStorage.setItem('customNotifications', JSON.stringify(customNotifications));
-      showNotification('Manual Reminder Saved', `Notification scheduled for ${scheduledTime.toLocaleString()} and stored in Google Sheets`, 'success');
+      showNotification('Manual Reminder Saved', `Notification scheduled for ${scheduledTime.toLocaleString()}`, 'success');
       scheduleAllNotifications();
+    }
+
+    // FIXED: Updated backend notification to use no-cors mode
+    async function sendBackendNotification(title, message, dutyDate, startTime, dutyType) {
+      try {
+        let onesignalId = null;
+        if (window.OneSignal) {
+          onesignalId = await OneSignal.User.PushSubscription.id;
+        }
+        
+        const payload = new URLSearchParams({
+          action: 'send_notification',
+          title: title,
+          message: message,
+          duty_date: dutyDate || '',
+          duty_time: startTime || '',
+          duty_type: dutyType || '',
+          onesignal_id: onesignalId || ''
+        });
+        
+        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: payload
+        });
+        console.log("Backend notification triggered:", title);
+      } catch(e) { console.log("Backend notification error:", e); }
+    }
+
+    async function scheduleDutyReminders(duty) {
+      const dutyDateTime = new Date(`${duty.date}T${duty.startTime}`);
+      const now = new Date();
+      
+      // 24 hours before
+      const twentyFourHour = new Date(dutyDateTime);
+      twentyFourHour.setHours(twentyFourHour.getHours() - 24);
+      if (twentyFourHour > now && notificationSettings['24hour']) {
+        const delayMs = twentyFourHour - now;
+        setTimeout(async () => {
+          await sendBackendNotification(
+            '⏰ Upcoming Duty Tomorrow',
+            `You have a ${duty.type} duty scheduled for tomorrow at ${duty.startTime}`,
+            duty.date, duty.startTime, duty.type
+          );
+          showNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, 'warning');
+        }, delayMs);
+      }
+      
+      // 1 hour before
+      const oneHour = new Date(dutyDateTime);
+      oneHour.setHours(oneHour.getHours() - 1);
+      if (oneHour > now && notificationSettings['1hour']) {
+        const delayMs = oneHour - now;
+        setTimeout(async () => {
+          await sendBackendNotification(
+            '⏰ Upcoming Duty in 1 Hour',
+            `Your ${duty.type} duty starts at ${duty.startTime}`,
+            duty.date, duty.startTime, duty.type
+          );
+          showNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, 'warning');
+        }, delayMs);
+      }
+      
+      // 30 minutes before
+      const thirtyMin = new Date(dutyDateTime);
+      thirtyMin.setMinutes(thirtyMin.getMinutes() - 30);
+      if (thirtyMin > now && notificationSettings['30min']) {
+        const delayMs = thirtyMin - now;
+        setTimeout(async () => {
+          await sendBackendNotification(
+            '⏰ Upcoming Duty in 30 Minutes',
+            `Your ${duty.type} duty starts soon at ${duty.startTime}`,
+            duty.date, duty.startTime, duty.type
+          );
+          showNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, 'warning');
+        }, delayMs);
+      }
+    }
+
+    // OneSignal initialization - FIXED
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
+        safari_web_id: "web.onesignal.auto.74ec48f7-2aba-4801-83dd-e3b373c160d1",
+        allowLocalhostAsSecureOrigin: true,
+        notifyButton: {
+          enable: true,
+          displayPredicate: () => true,
+        },
+      });
+      
+      setTimeout(async () => {
+        const permission = await OneSignal.Notifications.permission;
+        if (permission === "default") {
+          const result = await OneSignal.Notifications.requestPermission();
+          if (result) {
+            console.log("Notification permission granted");
+          }
+        }
+      }, 2000);
+    });
+
+    window.checkOneSignalStatus = async function() {
+      if (window.OneSignal) {
+        const isPushSupported = await window.OneSignal.Notifications.isPushSupported();
+        const permission = await window.OneSignal.Notifications.permission;
+        const userId = await OneSignal.User.PushSubscription.id;
+        console.log("OneSignal Status:", { isPushSupported, permission, userId });
+        if (userId) {
+          showNotification("✅ Notifications Ready", "Push notifications are properly configured!", "success");
+          await registerUserWithBackend(userId);
+        }
+      }
+    };
+
+    async function registerUserWithBackend(onesignalId) {
+      try {
+        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `action=register&onesignal_id=${onesignalId}`
+        });
+        console.log("User registered with backend");
+      } catch(e) { console.log("Backend registration error:", e); }
     }
 
     function startBackgroundNotificationCheck() { if (backgroundNotificationCheck) return; backgroundNotificationCheck = setInterval(() => { checkImmediateNotifications(); }, 60000); }
@@ -2266,7 +2258,6 @@
       sendBackendNotification('Test Notification', 'Your push notification system is working!', '', '', 'test');
     }
 
-    // MODIFIED: Add duty with backend scheduling for closed-browser notifications
     function addDuty() { 
       const date = document.getElementById('dutyDate').value;
       const startTime = document.getElementById('startTime').value;
@@ -2410,26 +2401,6 @@
     }
     document.addEventListener('DOMContentLoaded', initializeApp);
     document.addEventListener('visibilitychange', function() { if (!document.hidden && notificationSettings.enabled) checkImmediateNotifications(); });
-
-    async function registerUserWithBackend() {
-      try {
-        if (window.OneSignal) {
-          const userId = await OneSignal.User.PushSubscription.id;
-          if (userId) {
-            const response = await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: `action=register&onesignal_id=${userId}`
-            });
-            const result = await response.json();
-            console.log("Registration result:", result);
-          }
-        }
-      } catch(e) {
-        console.log("Registration error:", e);
-      }
-    }
-    setTimeout(registerUserWithBackend, 5000);
   </script>
 </body>
 </html>
