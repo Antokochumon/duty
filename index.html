@@ -40,7 +40,7 @@
       if (window.OneSignal) {
         const isPushSupported = await window.OneSignal.Notifications.isPushSupported();
         const permission = await window.OneSignal.Notifications.permission;
-        const userId = await OneSignal.User.PushSubscription.getId();
+        const userId = await OneSignal.User.PushSubscription.id;
         console.log("OneSignal Status:", { isPushSupported, permission, userId });
         if (userId) {
           showNotification("✅ Notifications Ready", "Push notifications are properly configured!", "success");
@@ -2174,7 +2174,7 @@
       // Get OneSignal Subscription ID
       let onesignalId = null;
       if (window.OneSignal) {
-        onesignalId = await OneSignal.User.PushSubscription.getId();
+        onesignalId = await OneSignal.User.PushSubscription.id; 
       }
       
       // Store to Google Sheets via Apps Script
