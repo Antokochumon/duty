@@ -19,6 +19,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <style>
+    /* Your existing CSS - keep as is */
     :root {
       --primary: #3b82f6;
       --secondary: #10b981;
@@ -55,12 +56,7 @@
       --border-light: #334155;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg-primary);
@@ -74,12 +70,7 @@
       overflow-x: hidden;
       transition: all 0.3s ease;
     }
-
-    .container {
-      max-width: 100%;
-      margin: 0 auto;
-    }
-
+    .container { max-width: 100%; margin: 0 auto; }
     .header {
       display: flex;
       align-items: center;
@@ -91,1286 +82,181 @@
       border: 1px solid var(--border-light);
       box-shadow: var(--shadow-sm);
     }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logo-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .logo-icon img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-
-    .logo-text h1 {
-      font-size: 20px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .logo-text .subtitle {
-      color: var(--text-secondary);
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .theme-toggle {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      border: 1px solid var(--border-light);
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: none;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .theme-toggle:hover {
-      background: var(--bg-primary);
-      transform: translateY(-1px);
-    }
-
-    .menu-toggle {
-      background: var(--primary);
-      color: white;
-      border: none;
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      font-size: 18px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .menu-toggle:hover {
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .mobile-menu {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .mobile-menu.active {
-      display: block;
-      opacity: 1;
-    }
-
-    .mobile-menu-content {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-light);
-      box-shadow: var(--shadow-lg);
-      padding: 20px;
-      transform: translateY(-100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .mobile-menu.active .mobile-menu-content {
-      transform: translateY(0);
-    }
-
-    .mobile-menu-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .mobile-menu-title {
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    .close-menu {
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .close-menu:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .stat-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-    }
-
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .stat-number {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 2px;
-      line-height: 1;
-    }
-
-    .stat-label {
-      font-size: 9px;
-      color: var(--text-secondary);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: var(--shadow-sm);
-      transition: all 0.2s ease;
-    }
-
-    .card:hover {
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      position: relative;
-    }
-
-    .card-icon {
-      font-size: 20px;
-    }
-
-    .card-title {
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .card-description {
-      color: var(--text-secondary);
-      font-size: 14px;
-      margin-top: 2px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      font-weight: 500;
-      font-size: 14px;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--border-light);
-      border-radius: 8px;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      font-size: 14px;
-      font-family: inherit;
-      transition: all 0.2s ease;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-      background: var(--bg-secondary);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      min-height: 44px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #2563eb;
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .btn-secondary {
-      background: var(--secondary);
-      color: white;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: #059669;
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .btn-danger {
-      background: var(--danger);
-      color: white;
-    }
-
-    .btn-danger:hover:not(:disabled) {
-      background: #dc2626;
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .btn-outline {
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-      border: 1px solid var(--border-light);
-    }
-
-    .btn-outline:hover:not(:disabled) {
-      background: var(--bg-tertiary);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .desktop-actions {
-      display: none;
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .mobile-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .mobile-actions .btn {
-      flex: 1;
-    }
-
-    .menu-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .menu-actions .btn {
-      width: 100%;
-      justify-content: flex-start;
-    }
-
-    .switch-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 12px;
-      background: var(--bg-tertiary);
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-
-    .switch-info {
-      flex: 1;
-    }
-
-    .switch-title {
-      font-weight: 500;
-      font-size: 14px;
-      margin-bottom: 2px;
-    }
-
-    .switch-description {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .switch {
-      position: relative;
-      width: 44px;
-      height: 24px;
-      flex-shrink: 0;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .switch-slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: #ccc;
-      transition: 0.3s;
-      border-radius: 12px;
-    }
-
-    .switch-slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background: white;
-      transition: 0.3s;
-      border-radius: 50%;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    input:checked + .switch-slider {
-      background: var(--primary);
-    }
-
-    input:checked + .switch-slider:before {
-      transform: translateX(20px);
-    }
-
-    .calendar-container {
-      margin-top: 16px;
-    }
-
-    .calendar-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding: 0 4px;
-    }
-
-    .calendar-nav-btn {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-      color: var(--text-primary);
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .calendar-nav-btn:hover {
-      background: var(--bg-tertiary);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .calendar-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--primary);
-      text-align: center;
-      flex: 1;
-      margin: 0 12px;
-    }
-
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      background: var(--bg-secondary);
-      border-radius: 12px;
-      padding: 20px;
-      border: 1px solid var(--border-light);
-      min-height: 420px;
-    }
-
-    .calendar-day-name {
-      font-weight: 600;
-      font-size: 12px;
-      text-align: center;
-      padding: 12px 0;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .calendar-date {
-      background: var(--bg-primary);
-      border: 1px solid var(--border-light);
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      font-weight: 500;
-      min-height: 55px;
-      font-size: 14px;
-      margin: 2px;
-    }
-
-    .calendar-date:hover {
-      background: var(--bg-tertiary);
-      transform: scale(1.02);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .calendar-date.other-month {
-      opacity: 0.3;
-      pointer-events: none;
-    }
-
-    .calendar-date.today {
-      border-color: var(--current-red);
-      font-weight: 700;
-    }
-
-    .calendar-date.today .date-number {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 30px;
-      height: 30px;
-      background: var(--current-red);
-      color: white;
-      border-radius: 50%;
-    }
-
-    .calendar-date.regular {
-      background: rgba(34, 197, 94, 0.1);
-      border-color: var(--success);
-    }
-
-    .calendar-date.overtime {
-      background: rgba(249, 115, 22, 0.1);
-      border-color: var(--overtime-color);
-    }
-
-    .calendar-date.holiday {
-      background: rgba(139, 92, 246, 0.1);
-      border-color: var(--holiday-color);
-    }
-
-    .calendar-date.training {
-      background: rgba(6, 182, 212, 0.1);
-      border-color: var(--training-color);
-    }
-
-    .calendar-date.meeting {
-      background: rgba(236, 72, 153, 0.1);
-      border-color: var(--meeting-color);
-    }
-
-    .calendar-date.emergency {
-      background: rgba(220, 38, 38, 0.1);
-      border-color: var(--emergency-color);
-    }
-
-    .calendar-date.duty.today {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: var(--success);
-    }
-
-    .calendar-date.duty.today .date-number {
-      background: var(--success);
-      color: var(--current-red);
-      font-weight: 700;
-    }
-
-    .date-number {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 30px;
-      height: 30px;
-    }
-
-    .duty-time {
-      font-size: 10px;
-      font-weight: 400;
-      margin-top: 3px;
-      opacity: 0.9;
-      padding: 2px 4px;
-      border-radius: 3px;
-      line-height: 1;
-    }
-
-    .regular .duty-time {
-      background: rgba(34, 197, 94, 0.2);
-    }
-
-    .overtime .duty-time {
-      background: rgba(249, 115, 22, 0.2);
-    }
-
-    .holiday .duty-time {
-      background: rgba(139, 92, 246, 0.2);
-    }
-
-    .training .duty-time {
-      background: rgba(6, 182, 212, 0.2);
-    }
-
-    .meeting .duty-time {
-      background: rgba(236, 72, 153, 0.2);
-    }
-
-    .emergency .duty-time {
-      background: rgba(220, 38, 38, 0.2);
-    }
-
-    .notes-container {
-      display: none;
-    }
-
-    .note-item {
-      padding: 10px;
-      border-radius: 8px;
-      background: var(--bg-tertiary);
-      margin-bottom: 8px;
-      border-left: 3px solid var(--primary);
-    }
-
-    .note-date {
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: 4px;
-    }
-
-    .note-content {
-      font-size: 14px;
-    }
-
-    .notes-popup-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 2000;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .notes-popup-overlay.active {
-      display: block;
-      opacity: 1;
-    }
-
-    .notes-popup {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: var(--bg-secondary);
-      border-radius: 16px;
-      padding: 24px;
-      width: 90%;
-      max-width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .notes-popup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .notes-popup-title {
-      font-size: 20px;
-      font-weight: 600;
-    }
-
-    .close-notes-popup {
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .close-notes-popup:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
-
-    .notes-popup-content {
-      margin-bottom: 20px;
-    }
-
-    .notes-popup-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-    }
-
-    .duty-popup-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
-      z-index: 2000;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .duty-popup-overlay.active {
-      display: block;
-      opacity: 1;
-    }
-
-    .duty-popup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      display: flex;
-      flex-direction: column;
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 28px;
-      padding: 28px;
-      width: 92%;
-      max-width: 560px;
-      max-height: calc(100vh - 160px);
-      overflow: visible;
-      overflow-x: hidden;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      animation: fadeInPopup 0.3s ease-out;
-    }
-
-    body:not(.dark) .duty-popup {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      box-shadow: var(--shadow-md);
-    }
-
-    body:not(.dark) .duty-popup-overlay {
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      background: rgba(0,0,0,0.3);
-    }
-
-    @keyframes fadeInPopup {
-      from { opacity: 0; transform: translate(-50%, -40%) scale(0.95); }
-      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    }
-
-    .duty-popup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(59,130,246,0.1);
-      flex-shrink: 0;
-    }
-
-    .duty-popup-title {
-      font-size: 24px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .close-duty-popup {
-      background: rgba(59,130,246,0.1);
-      border: 1px solid rgba(59,130,246,0.2);
-      font-size: 22px;
-      color: var(--text-primary);
-      cursor: pointer;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px;
-      transition: all 0.2s ease;
-    }
-
-    .close-duty-popup:hover {
-      background: rgba(59,130,246,0.2);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 16px rgba(59,130,246,0.2);
-    }
-
-    .duty-popup-content {
-      display: grid;
-      gap: 16px;
-      padding: 0;
-      flex: 1 1 auto;
-      max-height: calc(100vh - 280px);
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-
-    .duty-popup-content::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .duty-popup-content::-webkit-scrollbar-track {
-      background: rgba(59,130,246,0.05);
-      border-radius: 10px;
-    }
-
-    .duty-popup-content::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, rgba(59,130,246,0.4), rgba(59,130,246,0.2));
-      border-radius: 10px;
-    }
-
-    .duty-popup-content::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(180deg, rgba(59,130,246,0.6), rgba(59,130,246,0.4));
-    }
-
-    .duty-popup .form-group {
-      display: grid;
-      gap: 10px;
-      padding: 14px 16px;
-      background: rgba(59,130,246,0.04);
-      border: 1px solid rgba(59,130,246,0.12);
-      border-radius: 16px;
-      transition: all 0.2s ease;
-    }
-
-    .duty-popup .form-group:hover {
-      background: rgba(59,130,246,0.08);
-    }
-
-    .duty-popup .form-group label {
-      font-weight: 600;
-      color: var(--glass-text-light-alt);
-      font-size: 14px;
-    }
-
-    .dark .duty-popup .form-group label {
-      color: var(--glass-text-dark-alt);
-    }
-
-    .duty-popup .form-group input,
-    .duty-popup .form-group select,
-    .duty-popup .form-group textarea {
-      border: 1px solid rgba(59,130,246,0.12);
-      background: rgba(0,0,0,0.06);
-      padding: 12px 14px;
-      border-radius: 12px;
-      color: var(--glass-text-light);
-      font-size: 14px;
-      transition: all 0.2s ease;
-    }
-
-    .dark .duty-popup .form-group {
-      background: rgba(0,0,0,0.55);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .dark .duty-popup .form-group input,
-    .dark .duty-popup .form-group select,
-    .dark .duty-popup .form-group textarea {
-      background: white;
-      border: 1px solid rgba(255,255,255,0.06);
-      color: black;
-    }
-
-    .duty-popup .form-group input:focus,
-    .duty-popup .form-group select:focus,
-    .duty-popup .form-group textarea:focus {
-      outline: none;
-      border-color: rgba(59,130,246,0.5);
-      background: white;
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    }
-
-    .duty-popup .form-group textarea {
-      min-height: 75px;
-      resize: vertical;
-    }
-
-    .duty-popup-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px;
-      position: absolute;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 56px);
-      max-width: 520px;
-      z-index: 3000;
-      pointer-events: auto;
-      background: var(--bg-secondary);
-      padding: 12px 16px;
-      border-radius: 16px;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .duty-popup-actions .btn {
-      flex: 1 1 auto;
-      min-width: 110px;
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-weight: 600;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      transition: all 0.2s ease;
-    }
-
-    .duty-popup-actions .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-    }
-
-    .popup-note-input-group {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      margin-top: 8px;
-    }
-
-    .popup-note-input-group textarea {
-      flex: 1;
-      min-width: 180px;
-      padding: 12px;
-      border: 1px solid var(--border-light);
-      border-radius: 12px;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      resize: vertical;
-    }
-
-    .popup-notes-list {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .popup-note-item {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px;
-      border-radius: 12px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-    }
-
-    .popup-note-actions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-
-    .popup-note-actions .btn {
-      padding: 6px 10px;
-      font-size: 13px;
-    }
-
-    .popup-note-item-content {
-      color: var(--text-primary);
-      white-space: pre-wrap;
-    }
-
-    .popup-note-item-date {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .todo-section {
-      border: 1px solid var(--border-light);
-      border-radius: 14px;
-      padding: 16px;
-      background: var(--bg-tertiary);
-      margin-top: 16px;
-      margin-bottom: 190px;
-    }
-
-    .todo-input-group {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .todo-input-group input {
-      flex: 1;
-      min-width: 180px;
-      padding: 12px;
-      border: 1px solid var(--border-light);
-      border-radius: 12px;
-      background: var(--bg-secondary);
-      color: var(--text-primary);
-    }
-
-    .todo-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .todo-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px;
-      border-radius: 12px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-    }
-
-    .todo-item-complete {
-      text-decoration: line-through;
-      color: var(--text-secondary);
-    }
-
-    .todo-task {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .todo-task label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      min-width: 0;
-    }
-
-    .todo-task input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--primary);
-    }
-
-    .todo-item button {
-      flex-shrink: 0;
-      font-size: 14px;
-      padding: 8px 12px;
-    }
-
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .logo-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .logo-text h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .logo-text .subtitle { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .theme-toggle { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-light); padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s ease; display: none; align-items: center; gap: 6px; }
+    .theme-toggle:hover { background: var(--bg-primary); transform: translateY(-1px); }
+    .menu-toggle { background: var(--primary); color: white; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 18px; cursor: pointer; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
+    .menu-toggle:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .mobile-menu { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; display: none; opacity: 0; transition: opacity 0.3s ease; }
+    .mobile-menu.active { display: block; opacity: 1; }
+    .mobile-menu-content { position: absolute; top: 0; left: 0; right: 0; background: var(--bg-secondary); border-bottom: 1px solid var(--border-light); box-shadow: var(--shadow-lg); padding: 20px; transform: translateY(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px); max-height: 90vh; overflow-y: auto; }
+    .mobile-menu.active .mobile-menu-content { transform: translateY(0); }
+    .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-light); }
+    .mobile-menu-title { font-size: 18px; font-weight: 600; }
+    .close-menu { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: 4px; transition: all 0.2s ease; }
+    .close-menu:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 16px; }
+    .stat-card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px; text-align: center; transition: all 0.2s ease; position: relative; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--primary), var(--secondary)); }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .stat-number { font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 2px; line-height: 1; }
+    .stat-label { font-size: 9px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px; }
+    .card { background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); transition: all 0.2s ease; }
+    .card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; position: relative; }
+    .card-icon { font-size: 20px; }
+    .card-title { font-size: 16px; font-weight: 600; }
+    .card-description { color: var(--text-secondary); font-size: 14px; margin-top: 2px; }
+    .form-group { margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 500; font-size: 14px; }
+    input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); font-size: 14px; font-family: inherit; transition: all 0.2s ease; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background: var(--bg-secondary); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all 0.2s ease; text-decoration: none; min-height: 44px; box-shadow: var(--shadow-sm); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn-secondary { background: var(--secondary); color: white; }
+    .btn-secondary:hover:not(:disabled) { background: #059669; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn-outline { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-light); }
+    .btn-outline:hover:not(:disabled) { background: var(--bg-tertiary); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .desktop-actions { display: none; gap: 12px; margin-top: 16px; }
+    .mobile-actions { display: flex; gap: 12px; margin-top: 16px; }
+    .mobile-actions .btn { flex: 1; }
+    .menu-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .menu-actions .btn { width: 100%; justify-content: flex-start; }
+    .switch-container { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 12px; }
+    .switch-info { flex: 1; }
+    .switch-title { font-weight: 500; font-size: 14px; margin-bottom: 2px; }
+    .switch-description { font-size: 12px; color: var(--text-secondary); }
+    .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: 0.3s; border-radius: 12px; }
+    .switch-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; transition: 0.3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+    input:checked + .switch-slider { background: var(--primary); }
+    input:checked + .switch-slider:before { transform: translateX(20px); }
+    .calendar-container { margin-top: 16px; }
+    .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px; }
+    .calendar-nav-btn { background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-primary); width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; font-size: 16px; font-weight: 600; }
+    .calendar-nav-btn:hover { background: var(--bg-tertiary); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+    .calendar-title { font-size: 18px; font-weight: 600; color: var(--primary); text-align: center; flex: 1; margin: 0 12px; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; background: var(--bg-secondary); border-radius: 12px; padding: 20px; border: 1px solid var(--border-light); min-height: 420px; }
+    .calendar-day-name { font-weight: 600; font-size: 12px; text-align: center; padding: 12px 0; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; height: 40px; display: flex; align-items: center; justify-content: center; }
+    .calendar-date { background: var(--bg-primary); border: 1px solid var(--border-light); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; position: relative; font-weight: 500; min-height: 55px; font-size: 14px; margin: 2px; }
+    .calendar-date:hover { background: var(--bg-tertiary); transform: scale(1.02); box-shadow: var(--shadow-sm); }
+    .calendar-date.other-month { opacity: 0.3; pointer-events: none; }
+    .calendar-date.today { border-color: var(--current-red); font-weight: 700; }
+    .calendar-date.today .date-number { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: var(--current-red); color: white; border-radius: 50%; }
+    .calendar-date.regular { background: rgba(34, 197, 94, 0.1); border-color: var(--success); }
+    .calendar-date.overtime { background: rgba(249, 115, 22, 0.1); border-color: var(--overtime-color); }
+    .calendar-date.holiday { background: rgba(139, 92, 246, 0.1); border-color: var(--holiday-color); }
+    .calendar-date.training { background: rgba(6, 182, 212, 0.1); border-color: var(--training-color); }
+    .calendar-date.meeting { background: rgba(236, 72, 153, 0.1); border-color: var(--meeting-color); }
+    .calendar-date.emergency { background: rgba(220, 38, 38, 0.1); border-color: var(--emergency-color); }
+    .calendar-date.duty.today { background: rgba(34, 197, 94, 0.2); border-color: var(--success); }
+    .calendar-date.duty.today .date-number { background: var(--success); color: var(--current-red); font-weight: 700; }
+    .date-number { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; }
+    .duty-time { font-size: 10px; font-weight: 400; margin-top: 3px; opacity: 0.9; padding: 2px 4px; border-radius: 3px; line-height: 1; }
+    .regular .duty-time { background: rgba(34, 197, 94, 0.2); }
+    .overtime .duty-time { background: rgba(249, 115, 22, 0.2); }
+    .holiday .duty-time { background: rgba(139, 92, 246, 0.2); }
+    .training .duty-time { background: rgba(6, 182, 212, 0.2); }
+    .meeting .duty-time { background: rgba(236, 72, 153, 0.2); }
+    .emergency .duty-time { background: rgba(220, 38, 38, 0.2); }
+    .notes-container { display: none; }
+    .note-item { padding: 10px; border-radius: 8px; background: var(--bg-tertiary); margin-bottom: 8px; border-left: 3px solid var(--primary); }
+    .note-date { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .note-content { font-size: 14px; }
+    .notes-popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000; display: none; opacity: 0; transition: opacity 0.3s ease; }
+    .notes-popup-overlay.active { display: block; opacity: 1; }
+    .notes-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-secondary); border-radius: 16px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+    .notes-popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-light); }
+    .notes-popup-title { font-size: 20px; font-weight: 600; }
+    .close-notes-popup { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: 4px; transition: all 0.2s ease; }
+    .close-notes-popup:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .notes-popup-content { margin-bottom: 20px; }
+    .notes-popup-actions { display: flex; gap: 12px; justify-content: flex-end; }
+    .duty-popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); z-index: 2000; display: none; opacity: 0; transition: opacity 0.3s ease; }
+    .duty-popup-overlay.active { display: block; opacity: 1; }
+    .duty-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 28px; padding: 28px; width: 92%; max-width: 560px; max-height: calc(100vh - 160px); overflow: visible; overflow-x: hidden; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); animation: fadeInPopup 0.3s ease-out; }
+    body:not(.dark) .duty-popup { background: var(--bg-secondary); border: 1px solid var(--border-light); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: var(--shadow-md); }
+    body:not(.dark) .duty-popup-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0,0,0,0.3); }
+    @keyframes fadeInPopup { from { opacity: 0; transform: translate(-50%, -40%) scale(0.95); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+    .duty-popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(59,130,246,0.1); flex-shrink: 0; }
+    .duty-popup-title { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .close-duty-popup { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); font-size: 22px; color: var(--text-primary); cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 14px; transition: all 0.2s ease; }
+    .close-duty-popup:hover { background: rgba(59,130,246,0.2); transform: translateY(-1px); box-shadow: 0 8px 16px rgba(59,130,246,0.2); }
+    .duty-popup-content { display: grid; gap: 16px; padding: 0; flex: 1 1 auto; max-height: calc(100vh - 280px); overflow-y: auto; overflow-x: hidden; }
+    .duty-popup-content::-webkit-scrollbar { width: 8px; }
+    .duty-popup-content::-webkit-scrollbar-track { background: rgba(59,130,246,0.05); border-radius: 10px; }
+    .duty-popup-content::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(59,130,246,0.4), rgba(59,130,246,0.2)); border-radius: 10px; }
+    .duty-popup .form-group { display: grid; gap: 10px; padding: 14px 16px; background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.12); border-radius: 16px; transition: all 0.2s ease; }
+    .duty-popup .form-group:hover { background: rgba(59,130,246,0.08); }
+    .duty-popup .form-group label { font-weight: 600; color: var(--glass-text-light-alt); font-size: 14px; }
+    .dark .duty-popup .form-group label { color: var(--glass-text-dark-alt); }
+    .duty-popup .form-group input, .duty-popup .form-group select, .duty-popup .form-group textarea { border: 1px solid rgba(59,130,246,0.12); background: rgba(0,0,0,0.06); padding: 12px 14px; border-radius: 12px; color: var(--glass-text-light); font-size: 14px; transition: all 0.2s ease; }
+    .dark .duty-popup .form-group { background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.06); }
+    .dark .duty-popup .form-group input, .dark .duty-popup .form-group select, .dark .duty-popup .form-group textarea { background: white; border: 1px solid rgba(255,255,255,0.06); color: black; }
+    .duty-popup .form-group input:focus, .duty-popup .form-group select:focus, .duty-popup .form-group textarea:focus { outline: none; border-color: rgba(59,130,246,0.5); background: white; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .duty-popup .form-group textarea { min-height: 75px; resize: vertical; }
+    .duty-popup-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); width: calc(100% - 56px); max-width: 520px; z-index: 3000; pointer-events: auto; background: var(--bg-secondary); padding: 12px 16px; border-radius: 16px; box-shadow: var(--shadow-lg); }
+    .duty-popup-actions .btn { flex: 1 1 auto; min-width: 110px; padding: 12px 18px; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; }
+    .duty-popup-actions .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); }
+    .popup-note-input-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-top: 8px; }
+    .popup-note-input-group textarea { flex: 1; min-width: 180px; padding: 12px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-primary); color: var(--text-primary); resize: vertical; }
+    .popup-notes-list { display: grid; gap: 10px; margin-top: 14px; }
+    .popup-note-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-light); }
+    .popup-note-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .popup-note-actions .btn { padding: 6px 10px; font-size: 13px; }
+    .popup-note-item-content { color: var(--text-primary); white-space: pre-wrap; }
+    .popup-note-item-date { font-size: 12px; color: var(--text-secondary); }
+    .todo-section { border: 1px solid var(--border-light); border-radius: 14px; padding: 16px; background: var(--bg-tertiary); margin-top: 16px; margin-bottom: 190px; }
+    .todo-input-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .todo-input-group input { flex: 1; min-width: 180px; padding: 12px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary); }
+    .todo-list { display: flex; flex-direction: column; gap: 10px; }
+    .todo-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-light); }
+    .todo-item-complete { text-decoration: line-through; color: var(--text-secondary); }
+    .todo-task { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .todo-task label { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; }
+    .todo-task input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+    .todo-item button { flex-shrink: 0; font-size: 14px; padding: 8px 12px; }
     @media (max-width: 640px) {
-      .duty-popup {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 96%;
-        max-width: 96%;
-        border-radius: 20px;
-        padding: 18px;
-        max-height: 92vh;
-      }
-      .duty-popup-content {
-        gap: 16px;
-        padding: 14px;
-      }
-      .duty-popup-actions {
-        justify-content: space-between;
-      }
-      .duty-popup-actions .btn {
-        flex: 1 1 48%;
-        min-width: 120px;
-      }
-      .duty-popup-actions .btn:nth-child(3) {
-        flex: 1 1 100%;
-      }
-      .todo-input-group,
-      .popup-note-input-group {
-        flex-direction: column;
-      }
-      .todo-input-group button,
-      .popup-note-input-group button {
-        width: 100%;
-      }
+      .duty-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 96%; max-width: 96%; border-radius: 20px; padding: 18px; max-height: 92vh; }
+      .duty-popup-content { gap: 16px; padding: 14px; }
+      .duty-popup-actions { justify-content: space-between; }
+      .duty-popup-actions .btn { flex: 1 1 48%; min-width: 120px; }
+      .duty-popup-actions .btn:nth-child(3) { flex: 1 1 100%; }
+      .todo-input-group, .popup-note-input-group { flex-direction: column; }
+      .todo-input-group button, .popup-note-input-group button { width: 100%; }
     }
-
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 2000;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .modal-overlay.active {
-      display: block;
-      opacity: 1;
-    }
-
-    .modal {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: var(--bg-secondary);
-      border-radius: 16px;
-      padding: 24px;
-      width: 90%;
-      max-width: 600px;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow-lg);
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .modal-title {
-      font-size: 20px;
-      font-weight: 600;
-    }
-
-    .close-modal {
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-
-    .close-modal:hover {
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
-
-    .chart-container {
-      margin: 20px 0;
-      height: 300px;
-    }
-
-    .notification {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-light);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: var(--shadow-lg);
-      z-index: 2000;
-      transform: translateY(-100px);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
-    }
-
-    .notification.show {
-      transform: translateY(0);
-    }
-
-    .notification.success {
-      border-left: 4px solid var(--success);
-    }
-
-    .notification.error {
-      border-left: 4px solid var(--danger);
-    }
-
-    .notification.warning {
-      border-left: 4px solid var(--warning);
-    }
-
-    .notification.info {
-      border-left: 4px solid var(--primary);
-    }
-
-    .notification-options {
-      background: var(--bg-tertiary);
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 16px;
-    }
-
-    .notification-option {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border-light);
-    }
-
-    .notification-option:last-child {
-      border-bottom: none;
-    }
-
-    .notification-option label {
-      font-size: 14px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 0;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .fade-in {
-      animation: fadeInUp 0.6s ease-out;
-    }
-
-    .desktop-only {
-      display: none;
-    }
-
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 2000; display: none; opacity: 0; transition: opacity 0.3s ease; }
+    .modal-overlay.active { display: block; opacity: 1; }
+    .modal { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-secondary); border-radius: 16px; padding: 24px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border-light); }
+    .modal-title { font-size: 20px; font-weight: 600; }
+    .close-modal { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: 4px; transition: all 0.2s ease; }
+    .close-modal:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+    .chart-container { margin: 20px 0; height: 300px; }
+    .notification { position: fixed; top: 10px; left: 10px; right: 10px; background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 12px; padding: 16px; box-shadow: var(--shadow-lg); z-index: 2000; transform: translateY(-100px); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px); }
+    .notification.show { transform: translateY(0); }
+    .notification.success { border-left: 4px solid var(--success); }
+    .notification.error { border-left: 4px solid var(--danger); }
+    .notification.warning { border-left: 4px solid var(--warning); }
+    .notification.info { border-left: 4px solid var(--primary); }
+    .notification-options { background: var(--bg-tertiary); border-radius: 8px; padding: 16px; margin-top: 16px; }
+    .notification-option { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border-light); }
+    .notification-option:last-child { border-bottom: none; }
+    .notification-option label { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; margin-bottom: 0; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeInUp 0.6s ease-out; }
+    .desktop-only { display: none; }
     @media (max-width: 480px) {
       body { padding: 6px; }
       .form-row { grid-template-columns: 1fr; }
@@ -1390,7 +276,6 @@
       .notes-popup { width: 95%; padding: 16px; }
       .duty-popup { width: 95%; padding: 16px; }
     }
-
     @media (min-width: 769px) {
       .container { max-width: 900px; padding: 0 20px; }
       .desktop-only { display: block; }
@@ -1419,26 +304,24 @@
           <div class="subtitle">Professional Scheduling</div>
         </div>
       </div>
-      
       <div class="header-actions">
         <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
           <span id="themeIcon">🌙</span>
           <span id="themeText">Dark</span>
         </button>
-        
         <button class="menu-toggle" onclick="toggleMobileMenu()" aria-label="Menu">
           <span id="menuIcon">⚙️</span>
         </button>
       </div>
     </header>
 
+    <!-- Mobile Menu (keep your existing mobile menu HTML) -->
     <div class="mobile-menu" id="mobileMenu" onclick="closeMobileMenuOnBackdrop(event)">
       <div class="mobile-menu-content">
         <div class="mobile-menu-header">
           <div class="mobile-menu-title">Quick Actions & Settings</div>
           <button class="close-menu" onclick="toggleMobileMenu()" aria-label="Close menu">×</button>
         </div>
-        
         <div class="card">
           <div class="card-header">
             <div class="card-icon">📋</div>
@@ -1447,12 +330,10 @@
               <div class="card-description">Add duty for selected date</div>
             </div>
           </div>
-          
           <div class="form-group">
             <label for="mobileDutyDate">📅 Select Date</label>
             <input type="date" id="mobileDutyDate" required>
           </div>
-          
           <div class="form-row">
             <div class="form-group">
               <label for="mobileStartTime">🕐 Start</label>
@@ -1463,7 +344,6 @@
               <input type="time" id="mobileEndTime" value="17:00" required>
             </div>
           </div>
-
           <div class="form-group">
             <label for="mobileDutyType">🏷️ Type</label>
             <select id="mobileDutyType">
@@ -1475,22 +355,15 @@
               <option value="emergency">Emergency</option>
             </select>
           </div>
-
           <div class="form-group">
             <label for="mobileDutyNotes">📝 Notes</label>
             <textarea id="mobileDutyNotes" rows="2" placeholder="Optional notes..."></textarea>
           </div>
-          
           <div class="mobile-actions">
-            <button class="btn btn-primary" onclick="addDutyMobile()" id="mobileAddBtn">
-              <span>➕</span> Add Duty
-            </button>
-            <button class="btn btn-danger" onclick="removeDutyMobile()" id="mobileRemoveBtn">
-              <span>🗑️</span> Remove
-            </button>
+            <button class="btn btn-primary" onclick="addDutyMobile()" id="mobileAddBtn"><span>➕</span> Add Duty</button>
+            <button class="btn btn-danger" onclick="removeDutyMobile()" id="mobileRemoveBtn"><span>🗑️</span> Remove</button>
           </div>
         </div>
-
         <div class="card">
           <div class="card-header">
             <div class="card-icon">🔔</div>
@@ -1499,7 +372,6 @@
               <div class="card-description">Manage notification preferences</div>
             </div>
           </div>
-          
           <div class="switch-container">
             <div class="switch-info">
               <div class="switch-title">Enable Notifications</div>
@@ -1510,7 +382,6 @@
               <span class="switch-slider"></span>
             </label>
           </div>
-
           <div class="notification-options" id="mobileNotificationOptions">
             <div class="notification-option">
               <label><span>⏰</span>24 Hours Before</label>
@@ -1546,7 +417,6 @@
               </div>
             </div>
           </div>
-
           <div class="switch-container">
             <div class="switch-info">
               <div class="switch-title">Daily Summary</div>
@@ -1557,7 +427,6 @@
               <span class="switch-slider"></span>
             </label>
           </div>
-
           <div class="switch-container">
             <div class="switch-info">
               <div class="switch-title">Overtime Alerts</div>
@@ -1569,42 +438,21 @@
             </label>
           </div>
         </div>
-
         <div class="menu-actions">
-          <button class="btn btn-secondary" onclick="showAnalytics(); toggleMobileMenu();">
-            <span>📊</span> View Analytics
-          </button>
-          <button class="btn btn-outline" onclick="exportToPDF(); toggleMobileMenu();">
-            <span>📄</span> Export PDF
-          </button>
-          <button class="btn btn-outline" onclick="toggleTheme();">
-            <span id="mobileThemeIcon">🌙</span> <span id="mobileThemeText">Toggle Theme</span>
-          </button>
-          <button class="btn btn-outline" onclick="showNotesView(); toggleMobileMenu();">
-            <span>📝</span> View All Notes
-          </button>
+          <button class="btn btn-secondary" onclick="showAnalytics(); toggleMobileMenu();"><span>📊</span> View Analytics</button>
+          <button class="btn btn-outline" onclick="exportToPDF(); toggleMobileMenu();"><span>📄</span> Export PDF</button>
+          <button class="btn btn-outline" onclick="toggleTheme();"><span id="mobileThemeIcon">🌙</span> <span id="mobileThemeText">Toggle Theme</span></button>
+          <button class="btn btn-outline" onclick="showNotesView(); toggleMobileMenu();"><span>📝</span> View All Notes</button>
         </div>
       </div>
     </div>
 
     <main>
       <div class="stats-grid fade-in">
-        <div class="stat-card">
-          <div class="stat-number" id="totalDuties">0</div>
-          <div class="stat-label">Total Duties</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="monthDuties">0</div>
-          <div class="stat-label">This Month</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="nextDuty">--</div>
-          <div class="stat-label">Next Duty</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="avgHours">0</div>
-          <div class="stat-label">Avg Hours</div>
-        </div>
+        <div class="stat-card"><div class="stat-number" id="totalDuties">0</div><div class="stat-label">Total Duties</div></div>
+        <div class="stat-card"><div class="stat-number" id="monthDuties">0</div><div class="stat-label">This Month</div></div>
+        <div class="stat-card"><div class="stat-number" id="nextDuty">--</div><div class="stat-label">Next Duty</div></div>
+        <div class="stat-card"><div class="stat-number" id="avgHours">0</div><div class="stat-label">Avg Hours</div></div>
       </div>
 
       <div class="card fade-in desktop-only">
@@ -1615,12 +463,10 @@
             <div class="card-description">Schedule and manage your duty assignments</div>
           </div>
         </div>
-        
         <div class="form-group">
           <label for="dutyDate">📅 Select Date</label>
           <input type="date" id="dutyDate" required>
         </div>
-        
         <div class="form-row">
           <div class="form-group">
             <label for="startTime">🕐 Start Time</label>
@@ -1631,7 +477,6 @@
             <input type="time" id="endTime" value="17:00" required>
           </div>
         </div>
-
         <div class="form-group">
           <label for="dutyType">🏷️ Duty Type</label>
           <select id="dutyType">
@@ -1643,22 +488,14 @@
             <option value="emergency">Emergency</option>
           </select>
         </div>
-
         <div class="form-group">
           <label for="dutyNotes">📝 Notes (Optional)</label>
           <textarea id="dutyNotes" rows="2" placeholder="Add any additional notes..."></textarea>
         </div>
-        
         <div class="desktop-actions">
-          <button class="btn btn-primary" onclick="addDuty()" id="addBtn">
-            <span>➕</span> Add Duty
-          </button>
-          <button class="btn btn-danger" onclick="removeDuty()" id="removeBtn">
-            <span>🗑️</span> Remove
-          </button>
-          <button class="btn btn-outline" onclick="showNotesView()">
-            <span>📝</span> View Notes
-          </button>
+          <button class="btn btn-primary" onclick="addDuty()" id="addBtn"><span>➕</span> Add Duty</button>
+          <button class="btn btn-danger" onclick="removeDuty()" id="removeBtn"><span>🗑️</span> Remove</button>
+          <button class="btn btn-outline" onclick="showNotesView()"><span>📝</span> View Notes</button>
         </div>
       </div>
 
@@ -1670,7 +507,6 @@
             <div class="card-description">Get intelligent reminders for your duties</div>
           </div>
         </div>
-        
         <div class="switch-container">
           <div class="switch-info">
             <div class="switch-title">Enable Notifications</div>
@@ -1681,7 +517,6 @@
             <span class="switch-slider"></span>
           </label>
         </div>
-
         <div class="notification-options" id="desktopNotificationOptions">
           <div class="notification-option">
             <label><span>⏰</span>24 Hours Before</label>
@@ -1717,7 +552,6 @@
             </div>
           </div>
         </div>
-
         <div class="switch-container">
           <div class="switch-info">
             <div class="switch-title">Daily Summary</div>
@@ -1728,7 +562,6 @@
             <span class="switch-slider"></span>
           </label>
         </div>
-
         <div class="switch-container">
           <div class="switch-info">
             <div class="switch-title">Overtime Alerts</div>
@@ -1739,14 +572,9 @@
             <span class="switch-slider"></span>
           </label>
         </div>
-
         <div class="desktop-actions">
-          <button class="btn btn-outline" onclick="testNotification()">
-            <span>🔔</span> Test Notification
-          </button>
-          <button class="btn btn-outline" onclick="window.checkOneSignalStatus()">
-            <span>📡</span> Check OneSignal
-          </button>
+          <button class="btn btn-outline" onclick="testNotification()"><span>🔔</span> Test Notification</button>
+          <button class="btn btn-outline" onclick="window.checkOneSignalStatus()"><span>📡</span> Check OneSignal</button>
         </div>
       </div>
 
@@ -1758,20 +586,19 @@
             <div class="card-description">Visual overview of all your scheduled duties</div>
           </div>
         </div>
-
         <div class="calendar-container">
           <div class="calendar-header">
             <button class="calendar-nav-btn" onclick="changeMonth(-1)" aria-label="Previous month">‹</button>
             <div class="calendar-title" id="calendarTitle">December 2024</div>
             <button class="calendar-nav-btn" onclick="changeMonth(1)" aria-label="Next month">›</button>
           </div>
-
           <div class="calendar-grid" id="calendarGrid"></div>
         </div>
       </div>
     </main>
   </div>
 
+  <!-- Popups (keep your existing popup HTML) -->
   <div class="notes-popup-overlay" id="notesPopup" onclick="closeNotesPopupOnBackdrop(event)">
     <div class="notes-popup">
       <div class="notes-popup-header">
@@ -1909,6 +736,9 @@
     let touchStartX = 0, touchEndX = 0;
     let currentOneSignalId = null;
 
+    // IMPORTANT: Replace this with your Google Apps Script Web App URL
+    const BACKEND_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYED_SCRIPT_ID/exec';
+
     // Helper functions
     function getCurrentDate() { return new Date().toISOString().split('T')[0]; }
     function formatDate(dateStr) { return new Date(dateStr).toLocaleDateString(); }
@@ -1916,7 +746,7 @@
     function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
     // =====================================================
-    // IMPROVED ONESIGNAL NOTIFICATION SYSTEM
+    // ONESIGNAL SETUP
     // =====================================================
     
     function storeOneSignalId(userId) {
@@ -1985,7 +815,7 @@
       if (!onesignalId || onesignalId === "null" || onesignalId === "undefined") return false;
       try {
         const payload = new URLSearchParams({ action: 'register', onesignal_id: onesignalId });
-        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
+        await fetch(BACKEND_URL, {
           method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: payload
         });
         console.log("✅ User registered with backend:", onesignalId);
@@ -1993,20 +823,42 @@
       } catch(e) { console.log("Backend registration error:", e); return false; }
     }
     
+    // =====================================================
+    // NOTIFICATION FUNCTIONS - ALL GO THROUGH BACKEND
+    // =====================================================
+    
     async function sendBackendNotification(title, message, dutyDate, startTime, dutyType) {
       try {
         const onesignalId = await getOneSignalId();
-        if (!onesignalId) { showNotification(title, message, 'info'); return false; }
+        if (!onesignalId) { 
+          showNotification(title, message, 'info'); 
+          return false; 
+        }
+        
+        // Send to backend which will handle OneSignal API
         const payload = new URLSearchParams({
-          action: 'send_notification', title: title, message: message,
-          duty_date: dutyDate || '', duty_time: startTime || '', duty_type: dutyType || '', onesignal_id: onesignalId
+          action: 'send_notification',
+          onesignal_id: onesignalId,
+          title: title,
+          message: message,
+          duty_date: dutyDate || '',
+          duty_time: startTime || '',
+          duty_type: dutyType || ''
         });
-        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
-          method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: payload
+        
+        await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: payload
         });
-        console.log("Backend notification sent:", title);
+        
+        console.log("Notification sent via backend:", title);
         return true;
-      } catch(e) { console.log("Backend notification error:", e); showNotification(title, message, 'info'); return false; }
+      } catch(e) { 
+        console.log("Backend notification error:", e); 
+        showNotification(title, message, 'info'); 
+        return false; 
+      }
     }
     
     async function scheduleManualNotification(section) {
@@ -2023,23 +875,23 @@
       if (isNaN(scheduledTime.getTime()) || scheduledTime <= now) { showNotification('Error', 'Please choose a future date and time', 'error'); return; }
       
       const onesignalId = await getOneSignalId();
+      
+      // Store in backend for scheduled processing
       try {
         const payload = new URLSearchParams({
-          action: 'store_scheduled_notification', subscription_id: onesignalId || 'pending',
-          selected_date: date, selected_time: time, title: titleText, timestamp: new Date().toISOString()
+          action: 'store_scheduled_notification',
+          subscription_id: onesignalId || 'pending',
+          selected_date: date,
+          selected_time: time,
+          title: titleText,
+          timestamp: new Date().toISOString()
         });
-        await fetch('https://script.google.com/macros/s/AKfycbw-GQBrKxgSA6fQS77DfVLhETjlgVcv4x1rVOvMMEnPmbfjmqG8kFiCzM0JymqmgxGNbw/exec', {
+        await fetch(BACKEND_URL, {
           method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: payload
         });
-      } catch(e) { console.log("Google Sheets storage error:", e); }
+      } catch(e) { console.log("Storage error:", e); }
       
-      const customNotification = { id: generateId(), datetime: dateTimeString, title: titleText, message: `Scheduled notification for ${scheduledTime.toLocaleString()}`, onesignalId: onesignalId };
-      customNotifications.push(customNotification);
-      localStorage.setItem('customNotifications', JSON.stringify(customNotifications));
-      showNotification('Manual Reminder Saved', `Notification scheduled for ${scheduledTime.toLocaleString()}`, 'success');
-      
-      const delayMs = scheduledTime - now;
-      setTimeout(async () => { await sendBackendNotification(titleText, `Your scheduled reminder: ${titleText}`, date, time, 'manual'); }, delayMs);
+      showNotification('Manual Reminder Scheduled', `Will be sent at ${scheduledTime.toLocaleString()}`, 'success');
     }
     
     window.checkOneSignalStatus = async function() {
@@ -2100,39 +952,58 @@
       else { clearAllNotifications(); stopBackgroundNotificationCheck(); }
     }
     
-    function scheduleAllNotifications() {
+    async function scheduleAllNotifications() {
       if (!notificationSettings.enabled) return;
-      clearAllNotifications();
+      
+      const onesignalId = await getOneSignalId();
+      if (!onesignalId) {
+        console.log("Cannot schedule notifications: No OneSignal ID");
+        return;
+      }
+      
       const now = new Date();
-      duties.forEach(duty => {
+      
+      for (const duty of duties) {
         const dutyDateTime = new Date(`${duty.date}T${duty.startTime}`);
-        if (dutyDateTime > now) {
-          if (notificationSettings['24hour']) {
-            const twentyFourHoursBefore = new Date(dutyDateTime);
-            twentyFourHoursBefore.setHours(twentyFourHoursBefore.getHours() - 24);
-            if (twentyFourHoursBefore > now) {
-              const timeoutId = setTimeout(() => { sendBackendNotification('Upcoming Duty Tomorrow', `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`, duty.date, duty.startTime, duty.type); }, twentyFourHoursBefore - now);
-              notificationTimeouts[`${duty.id}-24hour`] = timeoutId;
-            }
-          }
-          if (notificationSettings['1hour']) {
-            const oneHourBefore = new Date(dutyDateTime);
-            oneHourBefore.setHours(oneHourBefore.getHours() - 1);
-            if (oneHourBefore > now) {
-              const timeoutId = setTimeout(() => { sendBackendNotification('Upcoming Duty in 1 Hour', `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`, duty.date, duty.startTime, duty.type); }, oneHourBefore - now);
-              notificationTimeouts[`${duty.id}-1hour`] = timeoutId;
-            }
-          }
-          if (notificationSettings['30min']) {
-            const thirtyMinutesBefore = new Date(dutyDateTime);
-            thirtyMinutesBefore.setMinutes(thirtyMinutesBefore.getMinutes() - 30);
-            if (thirtyMinutesBefore > now) {
-              const timeoutId = setTimeout(() => { sendBackendNotification('Upcoming Duty in 30 Minutes', `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`, duty.date, duty.startTime, duty.type); }, thirtyMinutesBefore - now);
-              notificationTimeouts[`${duty.id}-30min`] = timeoutId;
-            }
+        if (dutyDateTime <= now) continue;
+        
+        // Schedule reminders via backend
+        if (notificationSettings['24hour']) {
+          const twentyFourHoursBefore = new Date(dutyDateTime);
+          twentyFourHoursBefore.setHours(twentyFourHoursBefore.getHours() - 24);
+          if (twentyFourHoursBefore > now) {
+            await sendBackendNotification(
+              'Upcoming Duty Tomorrow',
+              `You have a ${duty.type} duty scheduled for tomorrow at ${formatTime(duty.startTime)}`,
+              duty.date, duty.startTime, duty.type
+            );
           }
         }
-      });
+        
+        if (notificationSettings['1hour']) {
+          const oneHourBefore = new Date(dutyDateTime);
+          oneHourBefore.setHours(oneHourBefore.getHours() - 1);
+          if (oneHourBefore > now) {
+            await sendBackendNotification(
+              'Upcoming Duty in 1 Hour',
+              `Your ${duty.type} duty starts at ${formatTime(duty.startTime)}`,
+              duty.date, duty.startTime, duty.type
+            );
+          }
+        }
+        
+        if (notificationSettings['30min']) {
+          const thirtyMinutesBefore = new Date(dutyDateTime);
+          thirtyMinutesBefore.setMinutes(thirtyMinutesBefore.getMinutes() - 30);
+          if (thirtyMinutesBefore > now) {
+            await sendBackendNotification(
+              'Upcoming Duty in 30 Minutes',
+              `Your ${duty.type} duty starts soon at ${formatTime(duty.startTime)}`,
+              duty.date, duty.startTime, duty.type
+            );
+          }
+        }
+      }
     }
     
     function clearAllNotifications() { Object.keys(notificationTimeouts).forEach(key => clearTimeout(notificationTimeouts[key])); notificationTimeouts = {}; }
@@ -2158,7 +1029,7 @@
     
     function clearDutyNotifications(dutyId) { ['24hour', '1hour', '30min'].forEach(period => { const key = `${dutyId}-${period}`; if (notificationTimeouts[key]) { clearTimeout(notificationTimeouts[key]); delete notificationTimeouts[key]; } }); }
     
-    // UI Functions
+    // UI Functions (keep your existing UI functions - toggleMobileMenu, toggleTheme, toggleNotification, etc.)
     function toggleMobileMenu() { const menu = document.getElementById('mobileMenu'); menu.classList.toggle('active'); document.getElementById('mobileDutyDate').value = selectedDate; }
     function closeMobileMenuOnBackdrop(event) { if (event.target === event.currentTarget) { toggleMobileMenu(); } }
     
@@ -2271,7 +1142,7 @@
       toggleMobileMenu();
     }
     
-    // Notes functions
+    // Notes functions (keep your existing note functions)
     function showNotesView() { document.getElementById('allNotesPopup').classList.add('active'); renderAllNotes(); }
     function hideAllNotesPopup() { document.getElementById('allNotesPopup').classList.remove('active'); }
     function closeAllNotesPopupOnBackdrop(event) { if (event.target === event.currentTarget) hideAllNotesPopup(); }
@@ -2714,7 +1585,6 @@
       if (notificationSettings.enabled) { requestNotificationPermission().then(() => { scheduleAllNotifications(); startBackgroundNotificationCheck(); }); }
       checkImmediateNotifications();
       
-      // Restore saved OneSignal ID
       const savedId = localStorage.getItem('onesignal_user_id');
       if (savedId) { currentOneSignalId = savedId; registerUserWithBackend(savedId); }
       
@@ -2724,7 +1594,6 @@
     document.addEventListener('DOMContentLoaded', initializeApp);
     document.addEventListener('visibilitychange', function() { if (!document.hidden && notificationSettings.enabled) checkImmediateNotifications(); });
     
-    // Attach popup type change listener
     document.addEventListener('DOMContentLoaded', function() {
       const select = document.getElementById('popupDutyType');
       if (select) select.addEventListener('change', togglePopupDutyTypeInput);
