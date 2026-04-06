@@ -2005,10 +2005,11 @@ async function sendBackendNotification(title, message, dutyDate, startTime, duty
       return false; 
     }
     
-    // Calculate scheduled time (1 hour before duty)
+    // Calculate scheduled time
+    let scheduleTime = null;
     if (dutyDate && startTime) {
       const dutyDateTime = new Date(`${dutyDate}T${startTime}`);
-      const scheduleTime = new Date(dutyDateTime);
+      scheduleTime = new Date(dutyDateTime);
       
       if (title.includes('1 Hour')) {
         scheduleTime.setHours(scheduleTime.getHours() - 1);
@@ -2017,47 +2018,27 @@ async function sendBackendNotification(title, message, dutyDate, startTime, duty
       } else if (title.includes('Tomorrow')) {
         scheduleTime.setDate(scheduleTime.getDate() - 1);
       }
-      
-      // Use OneSignal's scheduled notification API
-      const schedulePayload = {
-        app_id: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
-        include_external_user_ids: [onesignalId],
-        headings: { en: title },
-        contents: { en: message },
-        send_after: scheduleTime.toISOString(),
-        data: {
-          duty_date: dutyDate || '',
-          duty_time: startTime || '',
-          duty_type: dutyType || '',
-          type: "duty_reminder"
-        },
-        ttl: 86400,
-        priority: 10
-      };
-      
-      const response = await fetch('https://onesignal.com/api/v1/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'os_v2_app_otwer5zkxjeada654ozxhqla2edaeksh6hmei6mqhtgne6mt67wvm273yel6pq74zterpkfear5fskk5qj6rlcykvxthgq4onseof4q' // REPLACE THIS!
-        },
-        body: JSON.stringify(schedulePayload)
-      });
-      
-      const result = await response.json();
-      console.log("Scheduled notification:", result);
-      return true;
     }
     
-    // For immediate notifications
+    // Send to backend (which will call OneSignal API)
     const payload = new URLSearchParams({
-      action: 'send_notification', title: title, message: message,
-      duty_date: dutyDate || '', duty_time: startTime || '', duty_type: dutyType || '', onesignal_id: onesignalId
+      action: 'schedule_notification',
+      onesignal_id: onesignalId,
+      title: title,
+      message: message,
+      duty_date: dutyDate || '',
+      duty_time: startTime || '',
+      duty_type: dutyType || '',
+      schedule_time: scheduleTime ? scheduleTime.toISOString() : ''
     });
+    
     await fetch(BACKEND_URL, {
-      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: payload
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: payload
     });
-    console.log("Backend notification sent:", title);
+    
+    console.log("Notification scheduled via backend:", title);
     return true;
   } catch(e) { 
     console.log("Backend notification error:", e); 
@@ -2117,7 +2098,7 @@ if (onesignalId) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Basic YOUR_ONESIGNAL_REST_API_KEY' // REPLACE THIS!
+      'Authorization': 'Basic os_v2_app_otwer5zkxjeada654ozxhqla2edaeksh6hmei6mqhtgne6mt67wvm273yel6pq74zterpkfear5fskk5qj6rlcykvxthgq4onseof4q' // REPLACE THIS!
     },
     body: JSON.stringify(payload)
   });
@@ -2274,7 +2255,7 @@ async function scheduleWithOneSignal(title, message, scheduleTime, dutyDate, dut
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Basic YOUR_ONESIGNAL_REST_API_KEY' // REPLACE THIS!
+        'Authorization': 'Basic os_v2_app_otwer5zkxjeada654ozxhqla2edaeksh6hmei6mqhtgne6mt67wvm273yel6pq74zterpkfear5fskk5qj6rlcykvxthgq4onseof4q' // REPLACE THIS!
       },
       body: JSON.stringify(payload)
     });
