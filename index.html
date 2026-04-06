@@ -8,7 +8,7 @@
   <meta name="onesignal" content="true">
   <title>Duty Calendar 2025</title>
   
-  <!-- OneSignal SDK for push notifications -->
+  <!-- OneSignal SDK for push notifications - MUST load first -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   
   <!-- Add jsPDF library -->
@@ -1939,7 +1939,9 @@
           appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
           safari_web_id: "web.onesignal.auto.74ec48f7-2aba-4801-83dd-e3b373c160d1",
           allowLocalhostAsSecureOrigin: true,
-          notifyButton: { enable: true, displayPredicate: () => true }
+          notifyButton: { enable: true, displayPredicate: () => true },
+          serviceWorkerPath: "/duty/OneSignalSDKWorker.js",
+          serviceWorkerParam: { scope: "/duty/" }
         });
         
         setTimeout(async () => {
