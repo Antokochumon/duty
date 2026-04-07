@@ -6,6 +6,12 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="description" content="Professional Duty Calendar App - Advanced scheduling with smart reminders">
   <meta name="onesignal" content="true">
+  
+
+<!-- Force WebView to use Chrome WebView if available -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+  
   <title>Duty Calendar 2025</title>
   
   <!-- OneSignal SDK for push notifications - MUST load first -->
@@ -1600,4 +1606,136 @@
     });
   </script>
 </body>
+
+<script>
+// =====================================================
+// KODULAR WEBVIEW FIX FOR ONESIGNAL
+// =====================================================
+
+// Detect Kodular WebView
+function isKodularWebView() {
+    var ua = navigator.userAgent;
+    return ua.indexOf("Kodular") > -1 || 
+           ua.indexOf("AppInventor") > -1 || 
+           ua.indexOf("WebView") > -1 ||
+           (ua.indexOf("Android") > -1 && ua.indexOf("Chrome") === -1);
+}
+
+// Force notification permission request on page load
+if (isKodularWebView()) {
+    console.log("🔧 Kodular WebView detected - applying fixes");
+    
+    // Override OneSignal initialization
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({
+            appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
+            allowLocalhostAsSecureOrigin: true,
+            // CRITICAL: Disable service worker for WebView
+            serviceWorkerPath: null,
+            serviceWorkerParam: null,
+            notifyButton: {
+                enable: true,
+                displayPredicate: function() { return true; }
+            }
+        }).then(function() {
+            console.log("OneSignal initialized for Kodular");
+            // Request permission after 2 seconds
+            setTimeout(function() {
+                OneSignal.Notifications.requestPermission().then(function(accepted) {
+                    if (accepted) {
+                        console.log("✅ Permission granted in Kodular");
+                        // Store the user ID
+                        OneSignal.User.PushSubscription.id.then(function(userId) {
+                            if (userId) {
+                                localStorage.setItem('onesignal_user_id', userId);
+                                // Register with your backend
+                                fetch('https://script.google.com/macros/s/AKfycbxZumSGQ_PZL2AEZpkGT9W7D33-pkfyRNmARv7anQjWWnvH9vP3S6eNgQ0OfR75d0Pcfg/exec', {
+                                    method: 'POST',
+                                    mode: 'no-cors',
+                                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                    body: 'action=register&onesignal_id=' + userId
+                                });
+                            }
+                        });
+                    } else {
+                        console.log("❌ Permission denied");
+                        // Show custom button for retry
+                        showCustomSubscribeButton();
+                    }
+                });
+            }, 2000);
+        }).catch(function(err) {
+            console.log("OneSignal init error:", err);
+            showCustomSubscribeButton();
+        });
+    });
+    
+    // Create fallback subscribe button if OneSignal fails
+    function showCustomSubscribeButton() {
+        var existingBtn = document.getElementById('kodularSubscribeBtn');
+        if (existingBtn) return;
+        
+        var btn = document.createElement('button');
+        btn.id = 'kodularSubscribeBtn';
+        btn.innerHTML = '🔔 Enable Notifications';
+        btn.style.position = 'fixed';
+        btn.style.bottom = '20px';
+        btn.style.right = '20px';
+        btn.style.zIndex = '9999';
+        btn.style.background = '#3b82f6';
+        btn.style.color = 'white';
+        btn.style.border = 'none';
+        btn.style.padding = '12px 20px';
+        btn.style.borderRadius = '50px';
+        btn.style.fontSize = '14px';
+        btn.style.fontWeight = 'bold';
+        btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        btn.style.cursor = 'pointer';
+        btn.onclick = function() {
+            if (window.OneSignal) {
+                window.OneSignal.Notifications.requestPermission();
+            } else {
+                alert('Please reload the page and try again');
+            }
+            btn.remove();
+        };
+        document.body.appendChild(btn);
+    }
+    
+    // Add Android permission hint
+    function showAndroidInstructions() {
+        var div = document.createElement('div');
+        div.id = 'androidHint';
+        div.innerHTML = `
+            <div style="position: fixed; top: 20px; left: 20px; right: 20px; background: #ff9800; color: white; padding: 15px; border-radius: 12px; z-index: 9998; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <strong>🔔 Enable Notifications</strong><br>
+                Go to Android Settings → Apps → Your App → Notifications → Allow
+                <button onclick="document.getElementById('androidHint').remove()" style="float:right; background:none; border:none; color:white; font-size:20px;">×</button>
+            </div>
+        `;
+        setTimeout(function() {
+            if (document.getElementById('androidHint')) {
+                document.getElementById('androidHint').remove();
+            }
+        }, 8000);
+        document.body.appendChild(div);
+    }
+    
+    // Show hint after 3 seconds if no permission
+    setTimeout(function() {
+        if (window.OneSignal) {
+            window.OneSignal.Notifications.permission.then(function(perm) {
+                if (perm !== 'granted') {
+                    showAndroidInstructions();
+                }
+            });
+        } else {
+            showAndroidInstructions();
+        }
+    }, 3000);
+}
+</script>
+
+  
 </html>
