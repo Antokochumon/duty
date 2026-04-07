@@ -802,6 +802,7 @@ OneSignalDeferred.push(async function(OneSignal) {
     
     await OneSignal.init(config);
     console.log("OneSignal initialized successfully");
+    OneSignal.showSlidedownPrompt();
     
     // Get user ID
     setTimeout(async () => {
