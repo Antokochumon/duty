@@ -23,6 +23,17 @@
   
   <!-- Add Chart.js for analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+  // Force OneSignal to work in WebView
+  window.OneSignal = window.OneSignal || [];
+  window.OneSignal.push(function() {
+    OneSignal.init({
+      appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
+      allowLocalhostAsSecureOrigin: true,
+    });
+    OneSignal.showSlidedownPrompt();
+  });
+</script>
   
   <style>
     /* Your existing CSS - keep as is */
