@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#3b82f6">
   <meta name="description" content="Professional Duty Calendar App - Advanced scheduling with smart reminders">
   <meta name="onesignal" content="true">
-  <meta http-equiv="Content-Security-Policy" content="default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src *; style-src * 'unsafe-inline';">
+  
 
 <!-- Force WebView to use Chrome WebView if available -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -23,17 +23,6 @@
   
   <!-- Add Chart.js for analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-  // Force OneSignal to work in WebView
-  window.OneSignal = window.OneSignal || [];
-  window.OneSignal.push(function() {
-    OneSignal.init({
-      appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
-      allowLocalhostAsSecureOrigin: true,
-    });
-    OneSignal.showSlidedownPrompt();
-  });
-</script>
   
   <style>
     /* Your existing CSS - keep as is */
@@ -774,10 +763,6 @@ function generateId() { return Date.now().toString(36) + Math.random().toString(
 // ONESIGNAL SETUP - SINGLE VERSION WITH KODULAR SUPPORT
 // =====================================================
 
-// =====================================================
-// ONESIGNAL SETUP - SIMPLIFIED VERSION FOR KODULAR
-// =====================================================
-
 function storeOneSignalId(userId) {
   if (userId && userId !== currentOneSignalId && userId !== "null" && userId !== "undefined") {
     currentOneSignalId = userId;
@@ -791,35 +776,67 @@ function getStoredOneSignalId() {
   return localStorage.getItem('onesignal_user_id') || currentOneSignalId;
 }
 
-// SIMPLIFIED ONESIGNAL SETUP - NO CONDITIONAL
+// Setup OneSignal based on environment
+const isKodular = isKodularWebView();
+console.log("Environment:", isKodular ? "Kodular WebView" : "Browser");
+
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
-  await OneSignal.init({
-    appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
-    allowLocalhostAsSecureOrigin: true,
-    notifyButton: { enable: true }
-  });
-  
-  console.log("OneSignal initialized successfully");
-  
-  // Show subscription popup automatically
-  setTimeout(function() {
+  try {
+    const config = {
+      appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
+      allowLocalhostAsSecureOrigin: true,
+      notifyButton: { enable: true }
+    };
+    
+    if (!isKodular) {
+      // Browser mode - with service worker
+      config.safari_web_id = "web.onesignal.auto.74ec48f7-2aba-4801-83dd-e3b373c160d1";
+      config.serviceWorkerPath = "/OneSignalSDKWorker.js";
+      config.serviceWorkerParam = { scope: "/" };
+    } else {
+      // Kodular mode - NO service worker
+      config.serviceWorkerPath = null;
+      config.serviceWorkerParam = null;
+    }
+    
+    await OneSignal.init(config);
+    console.log("OneSignal initialized successfully");
     OneSignal.showSlidedownPrompt();
-    console.log("OneSignal popup triggered");
-  }, 3000);
-  
-  // Get user ID
-  setTimeout(async () => {
-    try {
-      const userId = await OneSignal.User.PushSubscription.id;
-      if (userId) storeOneSignalId(userId);
-      else {
-        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
-          if (event.current) storeOneSignalId(event.current);
-        });
-      }
-    } catch(e) { console.log("Error getting OneSignal ID:", e); }
-  }, 4000);
+    
+    // Get user ID
+    setTimeout(async () => {
+      try {
+        const userId = await OneSignal.User.PushSubscription.id;
+        if (userId) storeOneSignalId(userId);
+        else {
+          OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+            if (event.current) storeOneSignalId(event.current);
+          });
+        }
+      } catch(e) { console.log("Error getting OneSignal ID:", e); }
+    }, 2000);
+    
+    // Request permission automatically in Kodular
+    if (isKodular) {
+      setTimeout(async () => {
+        const permission = await OneSignal.Notifications.permission;
+        if (permission === "default") {
+          const result = await OneSignal.Notifications.requestPermission();
+          if (result) {
+            const userId = await OneSignal.User.PushSubscription.id;
+            if (userId) storeOneSignalId(userId);
+          }
+        }
+      }, 3000);
+    }
+    
+  } catch(e) { 
+    console.log("OneSignal init error:", e);
+    if (isKodular) {
+      showKodularSubscribeButton();
+    }
+  }
 });
 
 async function getOneSignalId() {
@@ -846,7 +863,7 @@ async function registerUserWithBackend(onesignalId) {
   } catch(e) { console.log("Backend registration error:", e); return false; }
 }
 
-// Kodular fallback button (kept for compatibility)
+// Kodular fallback button
 function showKodularSubscribeButton() {
   if (document.getElementById('kodularSubscribeBtn')) return;
   
@@ -863,7 +880,6 @@ function showKodularSubscribeButton() {
     btn.remove();
   };
   document.body.appendChild(btn);
-}
   
   // Show Android instructions
   setTimeout(function() {
@@ -873,7 +889,7 @@ function showKodularSubscribeButton() {
     document.body.appendChild(div);
     setTimeout(function() { if(div) div.remove(); }, 8000);
   }, 3000);
-
+}
 
 // =====================================================
 // NOTIFICATION FUNCTIONS
