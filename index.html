@@ -763,6 +763,10 @@ function generateId() { return Date.now().toString(36) + Math.random().toString(
 // ONESIGNAL SETUP - SINGLE VERSION WITH KODULAR SUPPORT
 // =====================================================
 
+// =====================================================
+// ONESIGNAL SETUP - SIMPLIFIED VERSION FOR KODULAR
+// =====================================================
+
 function storeOneSignalId(userId) {
   if (userId && userId !== currentOneSignalId && userId !== "null" && userId !== "undefined") {
     currentOneSignalId = userId;
@@ -776,67 +780,35 @@ function getStoredOneSignalId() {
   return localStorage.getItem('onesignal_user_id') || currentOneSignalId;
 }
 
-// Setup OneSignal based on environment
-const isKodular = isKodularWebView();
-console.log("Environment:", isKodular ? "Kodular WebView" : "Browser");
-
+// SIMPLIFIED ONESIGNAL SETUP - NO CONDITIONAL
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
-  try {
-    const config = {
-      appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
-      allowLocalhostAsSecureOrigin: true,
-      notifyButton: { enable: true }
-    };
-    
-    if (!isKodular) {
-      // Browser mode - with service worker
-      config.safari_web_id = "web.onesignal.auto.74ec48f7-2aba-4801-83dd-e3b373c160d1";
-      config.serviceWorkerPath = "/OneSignalSDKWorker.js";
-      config.serviceWorkerParam = { scope: "/" };
-    } else {
-      // Kodular mode - NO service worker
-      config.serviceWorkerPath = null;
-      config.serviceWorkerParam = null;
-    }
-    
-    await OneSignal.init(config);
-    console.log("OneSignal initialized successfully");
+  await OneSignal.init({
+    appId: "74ec48f7-2aba-4801-83dd-e3b373c160d1",
+    allowLocalhostAsSecureOrigin: true,
+    notifyButton: { enable: true }
+  });
+  
+  console.log("OneSignal initialized successfully");
+  
+  // Show subscription popup automatically
+  setTimeout(function() {
     OneSignal.showSlidedownPrompt();
-    
-    // Get user ID
-    setTimeout(async () => {
-      try {
-        const userId = await OneSignal.User.PushSubscription.id;
-        if (userId) storeOneSignalId(userId);
-        else {
-          OneSignal.User.PushSubscription.addEventListener("change", (event) => {
-            if (event.current) storeOneSignalId(event.current);
-          });
-        }
-      } catch(e) { console.log("Error getting OneSignal ID:", e); }
-    }, 2000);
-    
-    // Request permission automatically in Kodular
-    if (isKodular) {
-      setTimeout(async () => {
-        const permission = await OneSignal.Notifications.permission;
-        if (permission === "default") {
-          const result = await OneSignal.Notifications.requestPermission();
-          if (result) {
-            const userId = await OneSignal.User.PushSubscription.id;
-            if (userId) storeOneSignalId(userId);
-          }
-        }
-      }, 3000);
-    }
-    
-  } catch(e) { 
-    console.log("OneSignal init error:", e);
-    if (isKodular) {
-      showKodularSubscribeButton();
-    }
-  }
+    console.log("OneSignal popup triggered");
+  }, 3000);
+  
+  // Get user ID
+  setTimeout(async () => {
+    try {
+      const userId = await OneSignal.User.PushSubscription.id;
+      if (userId) storeOneSignalId(userId);
+      else {
+        OneSignal.User.PushSubscription.addEventListener("change", (event) => {
+          if (event.current) storeOneSignalId(event.current);
+        });
+      }
+    } catch(e) { console.log("Error getting OneSignal ID:", e); }
+  }, 4000);
 });
 
 async function getOneSignalId() {
@@ -863,7 +835,7 @@ async function registerUserWithBackend(onesignalId) {
   } catch(e) { console.log("Backend registration error:", e); return false; }
 }
 
-// Kodular fallback button
+// Kodular fallback button (kept for compatibility)
 function showKodularSubscribeButton() {
   if (document.getElementById('kodularSubscribeBtn')) return;
   
@@ -880,6 +852,7 @@ function showKodularSubscribeButton() {
     btn.remove();
   };
   document.body.appendChild(btn);
+}
   
   // Show Android instructions
   setTimeout(function() {
